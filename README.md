@@ -46,8 +46,8 @@ pip install -r requirements.txt
 streamlit run app/app.py --server.address 127.0.0.1 --server.port 8750
 ```
 
-Without a case pool the app runs on the bundled synthetic
-`data/cases.example.json` (a banner says so).
+Without a case pool the app runs on the bundled `data/cases.example.json`
+(one CT-RATE study with its four candidates; a banner says so).
 
 On first start the app seeds a host account **`admin` / `admin`** (role admin).
 Change that password before anyone else can reach the app:
@@ -76,16 +76,23 @@ SSH tunnel (`ssh -L 8750:127.0.0.1:8750 host`) rather than exposing the port.
 python scripts/build_pool_ctrate.py --n-studies 100 --seed 17
 ```
 
-This pairs the CT-RATE validation reports (Findings + Impression) with the four
-candidate sets on the RadGenome-ChestCT test split, keeps one volume per patient,
-stratifies by the number of positive CT-RATE abnormality labels (0 / 1–2 / 3–4 / 5+)
-and writes `data/cases.json`. Paths default to this project's layout; pass
-`--reports`, `--labels` and `--candidate NAME=PATH` to point elsewhere. Reg2RG's
-per-region output is flattened to plain prose (the region scaffolding is prompt
-template, not report).
+Inputs (CSV, text only): the CT-RATE validation reports and abnormality labels
+(`ibrahimhamamci/CT-RATE` on Hugging Face, gated) and the generated reports of
+Dia-LLaMA, Reg2RG, M3D and RadFM on the RadGenome-ChestCT test split
+(`cngvng/3D-CT-report-generation`). By default they are expected under
+`data/raw/` in the Hugging Face layout; pass `--reports`, `--labels` and
+`--candidate NAME=PATH` to point elsewhere.
 
-`data/cases.json` is git-ignored on purpose: CT-RATE is gated (CC BY-NC-SA) and
-must not be redistributed. The same goes for accounts, assignments and ratings.
+The script pairs each reference (Findings + Impression) with the four
+candidates, keeps one volume per patient, stratifies by the number of positive
+CT-RATE abnormality labels (0 / 1–2 / 3–4 / 5+) and writes `data/cases.json`.
+The same `--seed` gives the same pool on every machine. Reg2RG's per-region
+output is flattened to plain prose (the region scaffolding is prompt template,
+not report).
+
+`data/raw/` and `data/cases.json` are git-ignored on purpose: CT-RATE is gated
+(CC BY-NC-SA 4.0) and must not be redistributed. The same goes for accounts,
+assignments and ratings.
 
 ## Adapting it to your own data
 
@@ -131,7 +138,7 @@ app/
 scripts/
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
 data/
-  cases.example.json     synthetic example pool (schema reference)
+  cases.example.json     example pool: one CT-RATE study with its four candidates (schema reference)
 ```
 
 ## License

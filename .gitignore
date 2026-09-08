@@ -2,6 +2,7 @@
 # Report text from CT-RATE (and most clinical corpora) is gated and may not be
 # redistributed, and everything else here is rater PII or rating data.
 data/cases.json
+data/raw/
 data/accounts.json
 data/assignments.json
 data/progress.json

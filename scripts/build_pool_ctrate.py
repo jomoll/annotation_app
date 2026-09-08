@@ -21,7 +21,7 @@ Selection:
   * stratified by number of positive abnormality labels into bins 0 / 1-2 / 3-4 / 5+, with the
     quotas in --quotas (fractions of --n-studies), seeded
 
-Example (paths as used in this project):
+Inputs default to data/raw/ (see DEFAULT_* below for the expected layout):
   python scripts/build_pool_ctrate.py --n-studies 100 --seed 17
 """
 from __future__ import annotations
@@ -37,10 +37,10 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-SCORE_AGENT = Path("/data/moll/projects/score_agent/data")
-DEFAULT_REPORTS = SCORE_AGENT / "corpora/ct-rate/dataset/radiology_text_reports/validation_reports.csv"
-DEFAULT_LABELS = SCORE_AGENT / "corpora/ct-rate/dataset/multi_abnormality_labels/valid_predicted_labels.csv"
-GEN = SCORE_AGENT / "generated_reports/cngvng"
+RAW = ROOT / "data" / "raw"  # default location for the input CSVs (git-ignored)
+DEFAULT_REPORTS = RAW / "ct-rate/dataset/radiology_text_reports/validation_reports.csv"
+DEFAULT_LABELS = RAW / "ct-rate/dataset/multi_abnormality_labels/valid_predicted_labels.csv"
+GEN = RAW / "cngvng"
 DEFAULT_CANDIDATES = [
     f"dia_llama={GEN / 'dia_llama_finetuned/test_predictions.csv'}",
     f"reg2rg={GEN / 'reg2rg_finetuned/radgenome_combined_reports.csv'}",
