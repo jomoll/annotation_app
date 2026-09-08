@@ -24,7 +24,7 @@ import auth
 from config import DATA_DIR, NON_RATER_EMAILS, STUDIES_PER_RATER
 
 ASSIGN_PATH = DATA_DIR / "assignments.json"
-NON_RATER_SLUGS = {auth.user_slug(e) for e in NON_RATER_EMAILS}
+NON_RATER_SLUGS = {auth.user_slug(e) for e in NON_RATER_EMAILS} | {auth.user_slug(auth.DEFAULT_ADMIN_USER)}
 
 
 def load() -> dict:

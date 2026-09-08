@@ -19,6 +19,19 @@ from __future__ import annotations
 
 QUESTIONS = [
     {
+        "key": "completeness",
+        "title": "Completeness",
+        "prompt": "Is all necessary information that the patient would need, given the clinical question, present in the candidate?",
+        "type": "likert",
+        "scale": {
+            1: ("None", "Captures no important information."),
+            2: ("~25%", "Captures about 25% of the important information."),
+            3: ("~50%", "Captures about 50% of the important information."),
+            4: ("~75%", "Captures about 75% of the important information."),
+            5: ("All", "Captures all of the important information."),
+        },
+    },
+    {
         "key": "correctness",
         "title": "Correctness",
         "prompt": "Is everything in the candidate medically accurate (regardless of whether it is complete or relevant)?",
@@ -37,19 +50,6 @@ QUESTIONS = [
         "prompt": "Does the candidate conclude the same main diagnosis as the reference?",
         "type": "binary",
         "options": ["Yes", "No"],
-    },
-    {
-        "key": "completeness",
-        "title": "Completeness",
-        "prompt": "Is all necessary information that the patient would need, given the clinical question, present in the candidate?",
-        "type": "likert",
-        "scale": {
-            1: ("None", "Captures no important information."),
-            2: ("~25%", "Captures about 25% of the important information."),
-            3: ("~50%", "Captures about 50% of the important information."),
-            4: ("~75%", "Captures about 75% of the important information."),
-            5: ("All", "Captures all of the important information."),
-        },
     },
     {
         "key": "safety",

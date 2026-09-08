@@ -18,9 +18,9 @@ reference report (left) · candidate report (right) · six questions below
 
    | # | Question | Scale |
    |---|---|---|
-   | 1 | Correctness — is everything medically accurate, regardless of completeness? | 1–5 |
-   | 2 | Same diagnosis — does it conclude the same main diagnosis as the reference? | yes / no |
-   | 3 | Completeness — is all necessary information for the clinical question present? | 1–5 |
+   | 1 | Completeness — is all necessary information for the clinical question present? | 1–5 |
+   | 2 | Correctness — is everything medically accurate, regardless of completeness? | 1–5 |
+   | 3 | Same diagnosis — does it conclude the same main diagnosis as the reference? | yes / no |
    | 4 | Clinical safety — does any statement lead to a serious safety risk? | yes / no |
    | 5 | Overall score — subjective, excluding style, not derived from the other scores | 1–5 |
    | 6 | Presentation quality — clarity, prioritisation, conciseness (not part of the overall score) | 1–3 |
@@ -47,13 +47,25 @@ streamlit run app/app.py --server.address 127.0.0.1 --server.port 8750
 ```
 
 Without a case pool the app runs on the bundled synthetic
-`data/cases.example.json` (a banner says so). Create an account in the
-*Create account* tab, then make yourself admin:
+`data/cases.example.json` (a banner says so).
+
+On first start the app seeds a host account **`admin` / `admin`** (role admin).
+Change that password before anyone else can reach the app:
+
+```bash
+python -m app.manage set-password admin <new password>
+```
+
+The admin banner keeps nagging until you do. To make a regular rater account an
+admin instead:
 
 ```bash
 python -m app.manage set-role you@example.org admin
 # or: export ANNOTATION_ADMIN_EMAILS=you@example.org before starting the app
 ```
+
+The `admin` account can rate cases for testing; its assignments never count
+toward study coverage.
 
 If the report text is sensitive, bind to localhost and reach the app through an
 SSH tunnel (`ssh -L 8750:127.0.0.1:8750 host`) rather than exposing the port.
@@ -94,7 +106,8 @@ must not be redistributed. The same goes for accounts, assignments and ratings.
 * Raters sign up themselves (name, email, password, optional position and
   experience). Passwords are stored **only as salted PBKDF2-SHA256 hashes**;
   nobody can look them up. Reset one with
-  `python -m app.manage reset-password <email>` (prints a new random password).
+  `python -m app.manage reset-password <email>` (prints a new random password)
+  or set one explicitly with `python -m app.manage set-password <email> <pw>`.
 * Ratings: one append-only CSV per rater in `data/annotations/`; the latest row
   per case wins. `python -m app.manage export` dumps the full history.
 * Assignments: `data/assignments.json` (`ANNOTATION_TEST_EMAILS` lists test

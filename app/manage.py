@@ -3,6 +3,7 @@
     python -m app.manage list-users
     python -m app.manage set-role  <email> admin|rater
     python -m app.manage reset-password <email>        # prints a new random password
+    python -m app.manage set-password <email> <pw>     # e.g. change the built-in admin password
     python -m app.manage export  [out.csv]             # all ratings, one row per saved rating
 """
 from __future__ import annotations
@@ -40,6 +41,16 @@ def main(argv: list[str]) -> int:
         new_pw = secrets.token_urlsafe(9)
         ok = auth.set_password(args[0], new_pw)
         print(f"new password for {args[0]}: {new_pw}" if ok else f"no account for {args[0]}")
+        return 0 if ok else 1
+    if cmd == "set-password":
+        if len(args) != 2:
+            print("usage: set-password <email> <password>")
+            return 2
+        if len(args[1]) < auth.MIN_PASSWORD_LEN:
+            print(f"password must be at least {auth.MIN_PASSWORD_LEN} characters")
+            return 2
+        ok = auth.set_password(args[0], args[1])
+        print("ok" if ok else f"no account for {args[0]}")
         return 0 if ok else 1
     if cmd == "export":
         out = Path(args[0]) if args else Path("ratings_export.csv")

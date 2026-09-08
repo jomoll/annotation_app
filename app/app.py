@@ -62,7 +62,7 @@ def auth_screen():
 
     with tab_login:
         with st.form("login_form"):
-            email = st.text_input("Email")
+            email = st.text_input("Email (or `admin` for the host account)")
             password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("Log in", type="primary")
         if submitted:
@@ -72,8 +72,6 @@ def auth_screen():
                 st.rerun()
             else:
                 st.error(name_or_err)
-        st.caption("Forgot your password? Passwords are stored only as hashes and cannot be looked up — "
-                   "ask the study lead to reset it for you.")
 
     with tab_signup:
         st.caption("Create your own account — we'll assign you a fixed set of cases on your first visit "
@@ -394,6 +392,8 @@ def main():
         st.markdown('<div class="notice-banner">Running on the bundled example cases — build data/cases.json '
                     'to load your real pool (see README).</div>', unsafe_allow_html=True)
 
+    auth.ensure_default_admin()
+
     if "auth" not in st.session_state:
         st.session_state["auth"] = None
     if not st.session_state["auth"]:
@@ -424,6 +424,9 @@ def main():
             st.session_state["auth"] = None
             st.rerun()
     st.caption(f"{APP_TITLE} · research prototype · not for clinical use")
+    if is_admin and auth.default_admin_password_active():
+        st.warning("The built-in `admin` account still has the default password. Change it: "
+                   "`python -m app.manage set-password admin <new password>`", icon="⚠️")
     st.divider()
 
     if st.session_state["page"] == "overview":

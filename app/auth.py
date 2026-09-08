@@ -92,6 +92,35 @@ def check_login(email: str, password: str) -> Tuple[bool, str, str]:
     return True, acc.get("name") or email, role
 
 
+# ---- default admin ----------------------------------------------------------
+DEFAULT_ADMIN_USER = "admin"
+DEFAULT_ADMIN_PASSWORD = "admin"
+
+
+def ensure_default_admin() -> None:
+    """Seed the `admin` / `admin` login for whoever hosts the app, so there is always a way in
+    without touching the CLI. Created only when no admin account exists at all; change the
+    password right away with `python -m app.manage set-password admin <new password>`."""
+    accounts = load_accounts()
+    if any(a.get("role") == "admin" for a in accounts.values()) or DEFAULT_ADMIN_USER in accounts:
+        return
+    accounts[DEFAULT_ADMIN_USER] = {
+        "name": "Admin",
+        "password_hash": hash_password(DEFAULT_ADMIN_PASSWORD),
+        "role": "admin",
+        "position": "",
+        "experience_years": "",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _save_accounts(accounts)
+
+
+def default_admin_password_active() -> bool:
+    """True while the seeded admin account still uses the well-known default password."""
+    acc = load_accounts().get(DEFAULT_ADMIN_USER)
+    return bool(acc) and verify_password(DEFAULT_ADMIN_PASSWORD, acc.get("password_hash", ""))
+
+
 def set_role(email: str, role: str) -> bool:
     email = email.strip().lower()
     accounts = load_accounts()
