@@ -1,0 +1,29 @@
+{
+ "meta": {"note": "Synthetic example pool showing the case schema. Replace with data/cases.json built by scripts/build_pool_*.py."},
+ "cases": [
+  {"id": "example_1__system_a", "study_id": "example_1", "candidate_id": "system_a",
+   "reference": {"clinical_information": "Cough for three weeks.", "technique": "Non-contrast axial chest CT, 1.5 mm sections.",
+     "findings": "Trachea and both main bronchi are patent. Mediastinal vascular structures and heart size are normal. No pericardial effusion. A 9 mm solid nodule is seen in the right upper lobe. No pleural effusion. Upper abdominal organs within the field of view are unremarkable. Bone structures are intact.",
+     "impression": "9 mm solid nodule in the right upper lobe; follow-up recommended."},
+   "candidate": {"text": "Trachea and both main bronchi are open. Heart contour and size are normal. No pericardial effusion. A 9 mm nodule is observed in the left upper lobe. No pleural effusion. Upper abdominal organs are normal. Bone structures are natural."},
+   "meta": {}},
+  {"id": "example_1__system_b", "study_id": "example_1", "candidate_id": "system_b",
+   "reference": {"clinical_information": "Cough for three weeks.", "technique": "Non-contrast axial chest CT, 1.5 mm sections.",
+     "findings": "Trachea and both main bronchi are patent. Mediastinal vascular structures and heart size are normal. No pericardial effusion. A 9 mm solid nodule is seen in the right upper lobe. No pleural effusion. Upper abdominal organs within the field of view are unremarkable. Bone structures are intact.",
+     "impression": "9 mm solid nodule in the right upper lobe; follow-up recommended."},
+   "candidate": {"text": "Normal chest CT."},
+   "meta": {}},
+  {"id": "example_2__system_a", "study_id": "example_2", "candidate_id": "system_a",
+   "reference": {"clinical_information": "Not given.", "technique": "Non-contrast axial chest CT, 1.5 mm sections.",
+     "findings": "Trachea and both main bronchi are patent. Calcific plaques in the aortic arch. Heart size is normal. No pericardial effusion. Bilateral lower lobe ground-glass opacities with peribronchial thickening. Small right pleural effusion. Upper abdominal organs are unremarkable.",
+     "impression": "Bilateral lower lobe ground-glass opacities, infection favoured. Small right pleural effusion."},
+   "candidate": {"text": "Trachea and both main bronchi are open. Calcific plaques are observed in the aortic arch. Heart contour and size are normal. Ground-glass densities are observed in the lower lobes of both lungs; the findings were evaluated primarily in favor of an infectious process. Pleural effusion was not detected. Upper abdominal organs included in the sections are normal."},
+   "meta": {}},
+  {"id": "example_2__system_b", "study_id": "example_2", "candidate_id": "system_b",
+   "reference": {"clinical_information": "Not given.", "technique": "Non-contrast axial chest CT, 1.5 mm sections.",
+     "findings": "Trachea and both main bronchi are patent. Calcific plaques in the aortic arch. Heart size is normal. No pericardial effusion. Bilateral lower lobe ground-glass opacities with peribronchial thickening. Small right pleural effusion. Upper abdominal organs are unremarkable.",
+     "impression": "Bilateral lower lobe ground-glass opacities, infection favoured. Small right pleural effusion."},
+   "candidate": {"text": "Trachea, both main bronchi are open. Mediastinal main vascular structures, heart contour, size are normal. Pericardial effusion-thickening was not observed. Ground-glass opacities in the lower lobes of both lungs, peribronchial thickening. Minimal pleural effusion on the right. Upper abdominal organs included in the sections are normal. Bone structures in the study area are natural."},
+   "meta": {}}
+ ]
+}

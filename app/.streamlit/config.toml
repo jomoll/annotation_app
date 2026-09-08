@@ -1,0 +1,16 @@
+# Native widget theme, matching theme.py's design tokens so buttons / inputs /
+# selectboxes pick up the palette without CSS overrides.
+[theme]
+base = "light"
+primaryColor = "#0891b2"
+backgroundColor = "#f4f7f9"
+secondaryBackgroundColor = "#f8fafb"
+textColor = "#132126"
+borderColor = "#dfe6ea"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true

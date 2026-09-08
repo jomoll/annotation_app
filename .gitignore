@@ -1,0 +1,23 @@
+# ---- private / generated data: never commit ----
+# Report text from CT-RATE (and most clinical corpora) is gated and may not be
+# redistributed, and everything else here is rater PII or rating data.
+data/cases.json
+data/accounts.json
+data/assignments.json
+data/progress.json
+data/annotations/*
+!data/annotations/.gitkeep
+data/*.tmp
+data/*.json.tmp
+
+# ---- python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# ---- editors / OS ----
+.vscode/
+.idea/
+.DS_Store
