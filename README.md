@@ -19,7 +19,7 @@ reference report (left) · candidate report (right) · six questions below
    | # | Question | Scale |
    |---|---|---|
    | 1 | Completeness — is all necessary information for the clinical question present? | 1–5 |
-   | 2 | Correctness — is everything medically accurate, regardless of completeness? | 1–5 |
+   | 2 | Correctness — how medically accurate is it, regardless of completeness? | 1–5 |
    | 3 | Same diagnosis — does it conclude the same main diagnosis as the reference? | yes / no |
    | 4 | Clinical safety — does any statement lead to a serious safety risk? | yes / no |
    | 5 | Overall score — subjective, excluding style, not derived from the other scores | 1–5 |

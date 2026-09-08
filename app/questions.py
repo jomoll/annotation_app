@@ -34,14 +34,16 @@ QUESTIONS = [
     {
         "key": "correctness",
         "title": "Correctness",
-        "prompt": "Is everything in the candidate medically accurate (regardless of whether it is complete or relevant)?",
+        "prompt": ("How medically accurate is the candidate? Judge whether its statements and interpretations are "
+                   "supported by the reference report, regardless of completeness or relevance."),
         "type": "likert",
         "scale": {
-            1: ("Harmful", "Contains harmful content that will definitely impact future care."),
-            2: ("Likely impact", "Contains incorrect content that is likely to impact future care."),
-            3: ("Possible impact", "Contains incorrect content that may or may not impact future care."),
-            4: ("No impact", "Contains incorrect content that will not impact future care."),
-            5: ("Fully correct", "Contains no incorrect content."),
+            1: ("Mostly incorrect", "The overall interpretation is wrong or fabricated; major medical or radiological "
+                                    "errors substantially undermine the report."),
+            2: ("Substantially incorrect", "Several significant errors, though the overall picture is partly right."),
+            3: ("Partially correct", "A mix of correct and incorrect information, with neither clearly dominating."),
+            4: ("Mostly correct", "Essentially correct, with only minor factual or interpretive errors."),
+            5: ("Fully correct", "All medically meaningful statements and interpretations are accurate; no substantive errors."),
         },
     },
     {
