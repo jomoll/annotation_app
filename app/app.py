@@ -22,7 +22,7 @@ import progress
 import storage
 from cases_data import CASES, CASES_BY_ID, CANDIDATE_IDS, POOL_META, STUDY_IDS, USING_EXAMPLE
 from config import APP_SUBTITLE, APP_TITLE, MODALITY_LABEL, POSITIONS, STUDIES_PER_RATER
-from questions import LIKERT, QUESTIONS, REQUIRED_KEYS
+from questions import QUESTIONS, REQUIRED_KEYS, likert_values
 from theme import THEME_CSS, badge
 
 
@@ -122,10 +122,10 @@ def overview_page():
         st.subheader("The six questions")
         cols = st.columns(2)
         for i, q in enumerate(QUESTIONS):
-            if q["type"] == "likert5":
-                lo = q["scale"].get(1, ("", ""))[0]
-                hi = q["scale"].get(5, ("", ""))[0]
-                scale_txt = f"1–5 scale · 1 = {lo} · 5 = {hi}"
+            if q["type"] == "likert":
+                vals = likert_values(q)
+                lo, hi = q["scale"][vals[0]][0], q["scale"][vals[-1]][0]
+                scale_txt = f"{vals[0]}–{vals[-1]} scale · {vals[0]} = {lo} · {vals[-1]} = {hi}"
             else:
                 scale_txt = " / ".join(q["options"])
             note = f' · {q["note"]}' if q.get("note") else ""
@@ -139,7 +139,7 @@ def overview_page():
                 )
         with st.expander("Full per-score definitions"):
             for i, q in enumerate(QUESTIONS):
-                if q["type"] != "likert5":
+                if q["type"] != "likert":
                     continue
                 st.markdown(f"**{i+1}. {q['title']}**")
                 _render_scale_definitions(q)
@@ -151,11 +151,10 @@ def overview_page():
 
 def _render_scale_definitions(q: dict):
     lines = []
-    for v in LIKERT:
-        short, long = q["scale"].get(v, ("", ""))
-        if not short and not long:
-            continue
-        desc = f"<b>{v} — {_esc(short)}</b>" + (f": {_esc(long)}" if long else "")
+    for v in likert_values(q):
+        short, long = q["scale"][v]
+        long_html = "<br>".join(_esc(x) for x in long.split("\n") if x.strip())
+        desc = f"<b>{v} — {_esc(short)}</b>" + (f": {long_html}" if long_html else "")
         lines.append(f'<div class="scale-def">{desc}</div>')
     st.markdown("".join(lines), unsafe_allow_html=True)
 
@@ -209,12 +208,12 @@ def _render_question(i: int, q: dict, case_id: str, existing: dict):
     st.caption(q["prompt"] + (f"  \n_{q['note']}_" if q.get("note") else ""))
     key = _widget_key(q["key"], case_id)
     saved = str(existing.get(q["key"], "")).strip()
-    if q["type"] == "likert5":
-        opts = LIKERT
+    if q["type"] == "likert":
+        opts = likert_values(q)
         default = opts.index(int(saved)) if saved.isdigit() and int(saved) in opts else None
 
         def fmt(v, _q=q):
-            short = _q["scale"].get(v, ("", ""))[0]
+            short = _q["scale"][v][0]
             return f"{v} · {short}" if short else str(v)
 
         st.radio(q["title"], opts, index=default, horizontal=True, format_func=fmt,
@@ -353,7 +352,7 @@ def admin_ratings_page():
         st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
 
         st.markdown("**Mean score per candidate system**")
-        likert_keys = [q["key"] for q in QUESTIONS if q["type"] == "likert5"]
+        likert_keys = [q["key"] for q in QUESTIONS if q["type"] == "likert"]
         num = df.copy()
         for k in likert_keys:
             num[k] = pd.to_numeric(num[k], errors="coerce")

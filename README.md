@@ -18,12 +18,15 @@ reference report (left) · candidate report (right) · six questions below
 
    | # | Question | Scale |
    |---|---|---|
-   | 1 | Correctness — is the candidate factually / clinically correct? | 1–5 |
+   | 1 | Correctness — is everything medically accurate, regardless of completeness? | 1–5 |
    | 2 | Same diagnosis — does it conclude the same main diagnosis as the reference? | yes / no |
-   | 3 | Completeness — does it capture all important findings of the reference? | 1–5 |
-   | 4 | Clinical safety — could acting on the candidate lead to misdiagnosis, wrong treatment or delay? | 1–5 |
-   | 5 | Overall score (subjective) | 1–5 |
-   | 6 | Presentation quality — clear, concise, well structured? (not part of the overall score) | 1–5 |
+   | 3 | Completeness — is all necessary information for the clinical question present? | 1–5 |
+   | 4 | Clinical safety — does any statement lead to a serious safety risk? | yes / no |
+   | 5 | Overall score — subjective, excluding style, not derived from the other scores | 1–5 |
+   | 6 | Presentation quality — clarity, prioritisation, conciseness (not part of the overall score) | 1–3 |
+
+   The per-score definitions are in `app/questions.py` and shown to raters on the
+   Overview tab and next to every question.
 
    Answers autosave on every navigation and are prefilled when the rater comes
    back. Completed cases get a ✓ in the case selector.
@@ -79,9 +82,9 @@ must not be redistributed. The same goes for accounts, assignments and ratings.
   `scripts/build_pool_ctrate.py` and change the loaders. A candidate can be a
   single `text` or split into `findings` / `impression`.
 * **Questions** — edit `app/questions.py`. Each question is a dict (key, prompt,
-  type `likert5` or `binary`, per-score anchors). Stored values are the score or
-  option label, so rewording anchors never invalidates saved ratings.
-  *The per-score definitions currently in the file are provisional placeholders.*
+  type `likert` or `binary`, per-score anchors; the anchor keys define the scale,
+  so 1–3 and 1–5 mix freely). Stored values are the score or option label, so
+  rewording anchors never invalidates saved ratings.
 * **Study size / coverage / title** — `app/config.py` (`STUDIES_PER_RATER`,
   `TARGET_COVERAGE`, `APP_TITLE`, `MODALITY_LABEL`, …).
 * **Look** — `app/theme.py` and `app/.streamlit/config.toml`.

@@ -4,36 +4,31 @@ Every question is a dict with
     key      column name in the annotation CSV
     title    short heading shown above the widget
     prompt   the actual question
-    type     "likert5" (1–5 scale) or "binary" (two options)
-    scale    likert5 only: {score: (short label, definition)} for the scores
-             you want to anchor; unanchored scores just show the number
+    type     "likert" (numeric scale) or "binary" (two options)
+    scale    likert only: {score: (short label, definition)} — the keys define the scale
+             (1–5, 1–3, …); the definition may contain "\n" for several lines
     options  binary only: the two option labels
-    note     optional grey hint under the prompt
+    note     optional hint shown under the prompt
     required whether the case counts as "rated" without it (default True)
 
-Order here is display order. The stored value is the score (1–5) or the
-option label, never the anchor text, so anchors can be reworded later without
-breaking comparability of already-saved ratings.
-
-TODO(study lead): the per-score definitions below are PROVISIONAL placeholders.
-Replace them with the final definitions before the study starts.
+Order here is display order. The stored value is the score or the option label,
+never the anchor text, so anchors can be reworded later without breaking
+comparability of already-saved ratings.
 """
 from __future__ import annotations
-
-LIKERT = [1, 2, 3, 4, 5]
 
 QUESTIONS = [
     {
         "key": "correctness",
         "title": "Correctness",
-        "prompt": "Is the candidate factually and clinically correct?",
-        "type": "likert5",
+        "prompt": "Is everything in the candidate medically accurate (regardless of whether it is complete or relevant)?",
+        "type": "likert",
         "scale": {
-            1: ("Mostly incorrect", "Most statements are wrong, fabricated or contradict the reference."),
-            2: ("Major errors", "At least one clinically relevant error (e.g. wrong laterality, false abnormal/normal call)."),
-            3: ("Minor errors", "Only minor inaccuracies that would not change the clinical picture."),
-            4: ("Largely correct", "Essentially correct; at most trivial imprecisions."),
-            5: ("Fully correct", "Everything stated is correct and consistent with the reference."),
+            1: ("Harmful", "Contains harmful content that will definitely impact future care."),
+            2: ("Likely impact", "Contains incorrect content that is likely to impact future care."),
+            3: ("Possible impact", "Contains incorrect content that may or may not impact future care."),
+            4: ("No impact", "Contains incorrect content that will not impact future care."),
+            5: ("Fully correct", "Contains no incorrect content."),
         },
     },
     {
@@ -46,60 +41,67 @@ QUESTIONS = [
     {
         "key": "completeness",
         "title": "Completeness",
-        "prompt": "Does the candidate capture all important findings present in the reference?",
-        "type": "likert5",
+        "prompt": "Is all necessary information that the patient would need, given the clinical question, present in the candidate?",
+        "type": "likert",
         "scale": {
-            1: ("Most findings missing", "The important findings of the reference are largely absent."),
-            2: ("Key finding missing", "At least one clinically important finding is missing."),
-            3: ("Minor omissions", "Only secondary or incidental findings are missing."),
-            4: ("Nearly complete", "All important findings present; small details missing."),
-            5: ("Complete", "Every important finding of the reference is captured."),
+            1: ("None", "Captures no important information."),
+            2: ("~25%", "Captures about 25% of the important information."),
+            3: ("~50%", "Captures about 50% of the important information."),
+            4: ("~75%", "Captures about 75% of the important information."),
+            5: ("All", "Captures all of the important information."),
         },
     },
     {
         "key": "safety",
         "title": "Clinical safety",
-        "prompt": (
-            "Is there a clinically meaningful safety issue — could acting on the candidate instead of the "
-            "reference lead to a misdiagnosis, wrong treatment or a delay?"
-        ),
-        "type": "likert5",
-        "scale": {
-            1: ("Severe risk", "Likely to cause serious harm (e.g. missed or invented critical finding)."),
-            2: ("Significant risk", "Could plausibly change management for the worse."),
-            3: ("Moderate risk", "Might cause unnecessary work-up or minor delay."),
-            4: ("Minimal risk", "Differences are unlikely to affect the patient."),
-            5: ("No safety issue", "Acting on the candidate would be as safe as acting on the reference."),
-        },
+        "prompt": "Does any statement in the candidate lead to a serious safety risk?",
+        "note": ("For example a fabricated or omitted finding, an incorrect finding, or a severe mismatch with the "
+                 "reference that could lead to a different treatment."),
+        "type": "binary",
+        "options": ["Yes", "No"],
     },
     {
         "key": "overall",
         "title": "Overall score",
-        "prompt": "Your overall, subjective judgment of the candidate report.",
-        "type": "likert5",
+        "prompt": "Your overall judgment of the candidate report.",
+        "note": ("Excluding style. Not a calculation from the previous scores — this is deliberately subjective; "
+                 "the definitions are guidelines."),
+        "type": "likert",
         "scale": {
-            1: ("Unacceptable", ""),
-            2: ("Poor", ""),
-            3: ("Acceptable with revision", ""),
-            4: ("Good", ""),
-            5: ("Excellent", ""),
+            1: ("Very poor", "Fundamentally inadequate or clinically unreliable.\n"
+                             "Major errors, omissions, or incorrect interpretation substantially undermine the report."),
+            2: ("Poor", "Substantial problems that reduce clinical usefulness.\n"
+                        "Important findings may be missing, incorrect, or misinterpreted.\n"
+                        "Requires significant correction before being relied upon."),
+            3: ("Acceptable / mixed", "Provides meaningful clinical value but has noticeable limitations.\n"
+                                      "May have moderate omissions, incorrect details, or an imperfect interpretation.\n"
+                                      "Still reasonably useful overall."),
+            4: ("Good", "Clinically useful and largely correct.\n"
+                        "May contain minor errors, omissions, or imprecision.\n"
+                        "No issue that meaningfully affects the clinical interpretation."),
+            5: ("Excellent", "Clinically strong and highly useful.\n"
+                             "Accurate, appropriately complete, and reaches the appropriate diagnosis/impression.\n"
+                             "No meaningful errors or omissions."),
         },
     },
     {
         "key": "presentation",
         "title": "Presentation quality",
-        "prompt": "Does the candidate communicate its findings effectively — clearly, concisely and in a well-structured way?",
-        "type": "likert5",
-        "note": "Judge form only, not content. This does not feed into the overall score.",
+        "prompt": "How well does the candidate present its content — clarity, prioritisation, conciseness?",
+        "note": "Form only, not content. Subjective; does not feed into the overall score.",
+        "type": "likert",
         "scale": {
-            1: ("Very poor", "Hard to follow, repetitive, or disorganised."),
-            2: ("Poor", ""),
-            3: ("Adequate", ""),
-            4: ("Good", ""),
-            5: ("Excellent", "Clear, concise, well structured — reads like a good report."),
+            1: ("Poor", "Not clear, wrong ordering, verbose."),
+            2: ("Acceptable", "Minor issues with ordering, clarity or verbosity."),
+            3: ("Perfect", "Clear, well ordered, concise."),
         },
     },
 ]
 
 QUESTION_KEYS = [q["key"] for q in QUESTIONS]
 REQUIRED_KEYS = [q["key"] for q in QUESTIONS if q.get("required", True)]
+
+
+def likert_values(q: dict) -> list[int]:
+    """The scale points of a likert question, ascending."""
+    return sorted(q["scale"])
