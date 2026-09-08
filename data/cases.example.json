@@ -1,6 +1,6 @@
 {
  "meta": {
-  "note": "Example pool: one real CT-RATE study (valid_1003_a_1) with its four candidate reports, taken from data/cases.json. Internal use only — CT-RATE text is gated (CC BY-NC-SA 4.0) and must not be redistributed publicly. Replace with data/cases.json built by scripts/build_pool_ctrate.py for the real study.",
+  "note": "Example pool: one real CT-RATE study (valid_1005_a_1) with its four candidate reports, taken from data/cases.json. Internal use only — CT-RATE text is gated (CC BY-NC-SA 4.0) and must not be redistributed publicly. Replace with data/cases.json built by scripts/build_pool_ctrate.py for the real study.",
   "dataset": "CT-RATE validation split (RadGenome-ChestCT test split)",
   "candidates": [
    "dia_llama",
@@ -12,82 +12,102 @@
  },
  "cases": [
   {
-   "id": "valid_1003_a_1__dia_llama",
-   "study_id": "valid_1003_a_1",
+   "id": "valid_1005_a_1__dia_llama",
+   "study_id": "valid_1005_a_1",
    "candidate_id": "dia_llama",
    "reference": {
     "clinical_information": "Not given.",
-    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane with MD CT.",
-    "findings": "A triangular density secondary to the thymic remnant is observed in the anterior mediastinum. There is a right upper pratrecheal millimetric lymph node. No pathological LAP was detected in the mediastinum. The heart and mediastinal vascular structures have a natural appearance. Pleural effusion-thickening was not detected in both hemithorax. In the evaluation of both lung parenchyma; No mass, nodule-infiltration was detected in both lungs. No significant pathology was detected in the sections passing through the upper part of the abdomen. No lytic-destructive lesion was detected in bone structures.",
-    "impression": "Infiltration was not detected in both lung parenchyma."
+    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane.",
+    "findings": "Trachea and lumen of both main bronchi are open. No occlusive pathology was detected in the trachea and lumen of both main bronchi. Mediastinal structures were evaluated as suboptimal because the examination was unenhanced. As far as can be observed: Multiple lymph nodes were observed in the upper-lower paratracheal prevascular, subcarinal area, the largest of which was 7 mm in the short axis. Diffuse calcifications were observed in the pericardium, and the calcification area was measured 11 mm in its widest part. It is recommended to be evaluated for chronic constrictive pericarditis. Heart contour size is natural. Calibration of thoracic main vascular structures is natural. Pericardial thickening-effusion was not detected. Thoracic esophagus calibration was normal and no significant pathological wall thickening was detected. When examined in the lung parenchyma window; There are pleural effusion and atelectatic changes measuring 26 mm in thickness on the right. Subsegmental atelectatic changes were observed in both lungs. Bilateral peribronchial thickenings were observed. Minimal emphysematous changes were observed in both lungs. Upper abdominal sections entering the examination area are natural. Bilateral adrenal gland calibration was normal and no space-occupying lesion was detected. No lytic-destructive lesion was detected in bone structures.",
+    "impression": "Diffuse calcifications in the pericardium are recommended to be evaluated in terms of constructive pericarditis.  Pleural effusion and atelectatic changes on the right.  Bilateral subsegmentary atelectasis, mild emphysematous changes."
    },
    "candidate": {
-    "text": "Pericardial minimal effusion was observed. Calibration of thoracic main vascular structures is natural. Heart contour size is natural. When examined in the lung parenchyma window; Consolidation area is observed in the posterobasal segment of the lower lobe of the right lung. Mediastinal structures were evaluated as suboptimal since the examination was unenhanced. Thoracic esophagus calibration was normal and no significant pathological wall thickening was detected. Trachea and lumen of both main bronchi are open. No occlusive pathology was detected in the trachea and lumen of both main bronchi. Pericardial minimal effusion was observed. No lytic-destructive lesion was detected. No lymph node was detected in mediastinal and bilateral hilar pathological size and appearance. As far as can be seen; Calibration of mediastinal major vascular structures is natural. In the upper abdominal sections in the study area; Liver parenchyma density was diffusely decreased in line with fatty deposits. No mass lesion with distinguishable borders was detected in both lungs. No lymph node was detected in intraabdominal pathological size and appearance. Degenerative changes were observed in bone structures. Clinical and laboratory evaluation is recommended. In the examination made in the lung parenchyma window; No mass lesion was detected in both lungs. In the previous examination, it was understood that the consolidation area had decreased significantly. In the upper abdominal sections, the liver paren"
+    "text": "No pathological increase in wall thickness was detected in the esophagus within the sections. The widths of the mediastinal main vascular structures are normal. No lytic-destructive lesions were detected in the bone structures within the sections. No upper abdominal free fluid-collection was detected in the sections. The neural foramina are open. No mass or infiltrative lesion was detected in both lungs. Trachea and both main bronchi are open. There are no pathologically enlarged lymph nodes in the mediastinum and hilar regions. Mediastinal structures cannot be evaluated optimally because contrast material is not given. As far as can be observed: Heart contour and size are normal. There is minimal pericardial effusion. No occlusive pathology was detected in the trachea and both main bronchi. Vertebral corpus heights, alignments and densities within the sections are normal. In the upper abdominal organs within the sections, there is no mass with distinguishable borders as far as it can be observed within the borders of non-enhanced CT. Intervertebral disc distances are preserved. No pleural effusion was detected. There are no pathologically enlarged lymph nodes in the sections. No enlarged lymph nodes in pathological dimensions were detected. Minimal interlobular septal thickenings are observed in both lungs. There are no upper abdominal free fluid-collection or pathologically enlarged lymph nodes in the sections. The left adrenal gland is normal. No upper abdominal free fluid-collection was observed in the"
    },
    "meta": {
-    "volume": "valid_1003_a_1.nii.gz",
+    "volume": "valid_1005_a_1.nii.gz",
     "abnormality_labels": [
-     "Lymphadenopathy"
+     "Pericardial effusion",
+     "Lymphadenopathy",
+     "Emphysema",
+     "Atelectasis",
+     "Pleural effusion",
+     "Peribronchial thickening"
     ]
    }
   },
   {
-   "id": "valid_1003_a_1__reg2rg",
-   "study_id": "valid_1003_a_1",
+   "id": "valid_1005_a_1__reg2rg",
+   "study_id": "valid_1005_a_1",
    "candidate_id": "reg2rg",
    "reference": {
     "clinical_information": "Not given.",
-    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane with MD CT.",
-    "findings": "A triangular density secondary to the thymic remnant is observed in the anterior mediastinum. There is a right upper pratrecheal millimetric lymph node. No pathological LAP was detected in the mediastinum. The heart and mediastinal vascular structures have a natural appearance. Pleural effusion-thickening was not detected in both hemithorax. In the evaluation of both lung parenchyma; No mass, nodule-infiltration was detected in both lungs. No significant pathology was detected in the sections passing through the upper part of the abdomen. No lytic-destructive lesion was detected in bone structures.",
-    "impression": "Infiltration was not detected in both lung parenchyma."
+    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane.",
+    "findings": "Trachea and lumen of both main bronchi are open. No occlusive pathology was detected in the trachea and lumen of both main bronchi. Mediastinal structures were evaluated as suboptimal because the examination was unenhanced. As far as can be observed: Multiple lymph nodes were observed in the upper-lower paratracheal prevascular, subcarinal area, the largest of which was 7 mm in the short axis. Diffuse calcifications were observed in the pericardium, and the calcification area was measured 11 mm in its widest part. It is recommended to be evaluated for chronic constrictive pericarditis. Heart contour size is natural. Calibration of thoracic main vascular structures is natural. Pericardial thickening-effusion was not detected. Thoracic esophagus calibration was normal and no significant pathological wall thickening was detected. When examined in the lung parenchyma window; There are pleural effusion and atelectatic changes measuring 26 mm in thickness on the right. Subsegmental atelectatic changes were observed in both lungs. Bilateral peribronchial thickenings were observed. Minimal emphysematous changes were observed in both lungs. Upper abdominal sections entering the examination area are natural. Bilateral adrenal gland calibration was normal and no space-occupying lesion was detected. No lytic-destructive lesion was detected in bone structures.",
+    "impression": "Diffuse calcifications in the pericardium are recommended to be evaluated in terms of constructive pericarditis.  Pleural effusion and atelectatic changes on the right.  Bilateral subsegmentary atelectasis, mild emphysematous changes."
    },
    "candidate": {
-    "text": "Bilateral adrenal glands were normal and no space-occupying lesion was detected. Upper abdominal organs included in the sections are normal. No space-occupying lesion was detected in the liver that entered the cross-sectional area. Bone structures in the study area are natural. Vertebral corpus heights are preserved. Thyroid gland is natural. Thoracic esophagus calibration was normal and no significant tumoral wall thickening was detected. Pericardial effusion-thickening was not observed. As far as can be observed: The mediastinal main vascular structures, heart contour and size are normal. When examined in the lung parenchyma window; In the left lung upper lobe inferior lingula, there are nodular ground-glass densities in the peribronchial area, which are more prominent in the lower lobes. No enlarged lymph nodes in prevascular, pre-paratracheal, subcarinal or bilateral hilar-axillary pathological dimensions were detected. The mediastinum could not be evaluated optimally in the non-contrast examination. Pleural effusion-thickening was not detected. Trachea, both main bronchi are open. Gastric fundus is herniated into the thorax. The stomach is dilated. Diaphragmatic hemidiaphragm is observed on the left. No nodular or infiltrative lesion was detected in both lung parenchyma. The findings were initially evaluated in favor of viral pneumonia."
+    "text": "No upper abdominal free fluid-collection was detected in the sections. In the upper abdominal organs within the sections, there is no mass with distinguishable borders as far as it can be observed within the borders of non-enhanced CT. No lytic-destructive lesions were detected in the bone structures within the sections. The neural foramina are open. Thoracic vertebral corpus heights, alignments and densities are normal. Intervertebral disc distances are preserved. There is a mass with a diameter of 20 mm in the upper outer quadrant of the left breast. The mass has a heterogeneous appearance and has a diameter of 20 mm in the upper outer quadrant of the left breast. No pathological wall thickness increase was observed in the esophagus within the sections. As far as can be observed: Heart contour and size are normal. There is minimal bronchiectasis in the central parts of both lungs. No mass or infiltrative lesion was detected in both lungs. There are linear atelectasis in the middle lobe of the right lung and the lingular segment of the left lung upper lobe. There are emphysematous changes in both lungs. There are millimetric nodules in both lungs. No pathologically enlarged lymph nodes were detected in the mediastinum and hilar regions. The widths of the mediastinal main vascular structures are normal. Mediastinal structures cannot be evaluated optimally because contrast material is not given. No enlarged lymph nodes in pathological dimensions were detected. No pleural or pericardial effusion was detected. Thyroid gland sizes are normal. No occlusive pathology was detected in the trachea and both main bronchi. Trachea and both main bronchi are open. The ascending aorta measures 45 mm in anterior-posterior diameter and is wider than normal. The aortic arch is wider than normal with a diameter of 31 mm. There is a decrease in stomach"
    },
    "meta": {
-    "volume": "valid_1003_a_1.nii.gz",
+    "volume": "valid_1005_a_1.nii.gz",
     "abnormality_labels": [
-     "Lymphadenopathy"
+     "Pericardial effusion",
+     "Lymphadenopathy",
+     "Emphysema",
+     "Atelectasis",
+     "Pleural effusion",
+     "Peribronchial thickening"
     ]
    }
   },
   {
-   "id": "valid_1003_a_1__m3d",
-   "study_id": "valid_1003_a_1",
+   "id": "valid_1005_a_1__m3d",
+   "study_id": "valid_1005_a_1",
    "candidate_id": "m3d",
    "reference": {
     "clinical_information": "Not given.",
-    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane with MD CT.",
-    "findings": "A triangular density secondary to the thymic remnant is observed in the anterior mediastinum. There is a right upper pratrecheal millimetric lymph node. No pathological LAP was detected in the mediastinum. The heart and mediastinal vascular structures have a natural appearance. Pleural effusion-thickening was not detected in both hemithorax. In the evaluation of both lung parenchyma; No mass, nodule-infiltration was detected in both lungs. No significant pathology was detected in the sections passing through the upper part of the abdomen. No lytic-destructive lesion was detected in bone structures.",
-    "impression": "Infiltration was not detected in both lung parenchyma."
+    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane.",
+    "findings": "Trachea and lumen of both main bronchi are open. No occlusive pathology was detected in the trachea and lumen of both main bronchi. Mediastinal structures were evaluated as suboptimal because the examination was unenhanced. As far as can be observed: Multiple lymph nodes were observed in the upper-lower paratracheal prevascular, subcarinal area, the largest of which was 7 mm in the short axis. Diffuse calcifications were observed in the pericardium, and the calcification area was measured 11 mm in its widest part. It is recommended to be evaluated for chronic constrictive pericarditis. Heart contour size is natural. Calibration of thoracic main vascular structures is natural. Pericardial thickening-effusion was not detected. Thoracic esophagus calibration was normal and no significant pathological wall thickening was detected. When examined in the lung parenchyma window; There are pleural effusion and atelectatic changes measuring 26 mm in thickness on the right. Subsegmental atelectatic changes were observed in both lungs. Bilateral peribronchial thickenings were observed. Minimal emphysematous changes were observed in both lungs. Upper abdominal sections entering the examination area are natural. Bilateral adrenal gland calibration was normal and no space-occupying lesion was detected. No lytic-destructive lesion was detected in bone structures.",
+    "impression": "Diffuse calcifications in the pericardium are recommended to be evaluated in terms of constructive pericarditis.  Pleural effusion and atelectatic changes on the right.  Bilateral subsegmentary atelectasis, mild emphysematous changes."
    },
    "candidate": {
-    "text": "Pericardial effusion-thickening was not observed. The mediastinum could not be evaluated optimally in the non-contrast examination. Bilateral adrenal glands were normal and no space-occupying lesion was detected. The trachea was in the midline of both main bronchi and no obstructive pathology was detected in the lumen. Vertebral corpus heights are preserved. Thoracic aorta diameter is normal. No enlarged lymph nodes in prevascular, pre-paratracheal, subcarinal or bilateral hilar-axillary pathological dimensions were detected. No mass lesion-active infiltration with distinguishable borders was detected in both lungs. Bone structures in the study area are natural. Upper abdominal organs included in the sections are normal. No space-occupying lesion was detected in the liver that entered the cross-sectional area. As far as can be seen; Mediastinal main vascular structures, heart contour, size are normal. Thoracic esophageal calibration was normal and no significant tumoral wall thickening was detected. Apart"
+    "text": "Pleural effusion-thickening was not detected. Bilateral adrenal glands were normal and no space-occupying lesion was detected. In the right lung upper lobe posterior, there is a centracinar nodular density increase in the left lung upper lobe apicoposterior segment and a subpleural nodule with a diameter of approximately 4. In the sections passing through the upper abdomen, there is a nodular density compatible with 2 cm diameter calculus in the gallbladder lumen. No lymph node was detected in pathological size and appearance. No space-occupying lesion was detected in the liver that entered the cross-sectional area. Clinical laboratory correlation and follow-up are recommended for the differential diagnosis of viral pneumonias. When examined in the lung parenchyma window; trachea, both main bronchi are open. Mild hiatal hernia is observed in the case. Vertebral corpus heights are preserved. Mediastinal main vascular structures, heart contour, size are normal. Bone structures in the study area are natural. Thoracic esophagus calibration"
    },
    "meta": {
-    "volume": "valid_1003_a_1.nii.gz",
+    "volume": "valid_1005_a_1.nii.gz",
     "abnormality_labels": [
-     "Lymphadenopathy"
+     "Pericardial effusion",
+     "Lymphadenopathy",
+     "Emphysema",
+     "Atelectasis",
+     "Pleural effusion",
+     "Peribronchial thickening"
     ]
    }
   },
   {
-   "id": "valid_1003_a_1__radfm",
-   "study_id": "valid_1003_a_1",
+   "id": "valid_1005_a_1__radfm",
+   "study_id": "valid_1005_a_1",
    "candidate_id": "radfm",
    "reference": {
     "clinical_information": "Not given.",
-    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane with MD CT.",
-    "findings": "A triangular density secondary to the thymic remnant is observed in the anterior mediastinum. There is a right upper pratrecheal millimetric lymph node. No pathological LAP was detected in the mediastinum. The heart and mediastinal vascular structures have a natural appearance. Pleural effusion-thickening was not detected in both hemithorax. In the evaluation of both lung parenchyma; No mass, nodule-infiltration was detected in both lungs. No significant pathology was detected in the sections passing through the upper part of the abdomen. No lytic-destructive lesion was detected in bone structures.",
-    "impression": "Infiltration was not detected in both lung parenchyma."
+    "technique": "1.5 mm thick non-contrast sections were taken in the axial plane.",
+    "findings": "Trachea and lumen of both main bronchi are open. No occlusive pathology was detected in the trachea and lumen of both main bronchi. Mediastinal structures were evaluated as suboptimal because the examination was unenhanced. As far as can be observed: Multiple lymph nodes were observed in the upper-lower paratracheal prevascular, subcarinal area, the largest of which was 7 mm in the short axis. Diffuse calcifications were observed in the pericardium, and the calcification area was measured 11 mm in its widest part. It is recommended to be evaluated for chronic constrictive pericarditis. Heart contour size is natural. Calibration of thoracic main vascular structures is natural. Pericardial thickening-effusion was not detected. Thoracic esophagus calibration was normal and no significant pathological wall thickening was detected. When examined in the lung parenchyma window; There are pleural effusion and atelectatic changes measuring 26 mm in thickness on the right. Subsegmental atelectatic changes were observed in both lungs. Bilateral peribronchial thickenings were observed. Minimal emphysematous changes were observed in both lungs. Upper abdominal sections entering the examination area are natural. Bilateral adrenal gland calibration was normal and no space-occupying lesion was detected. No lytic-destructive lesion was detected in bone structures.",
+    "impression": "Diffuse calcifications in the pericardium are recommended to be evaluated in terms of constructive pericarditis.  Pleural effusion and atelectatic changes on the right.  Bilateral subsegmentary atelectasis, mild emphysematous changes."
    },
    "candidate": {
     "text": "Pericardial effusion-thickening was not observed. Pleural effusion-thickening was not detected. Bilateral adrenal glands were normal and no space-occupying lesion was detected. When examined in the lung parenchyma window; Aeration of both lung parenchyma is normal and no nodular or infiltrative lesion is detected in the lung parenchyma. Vertebral corpus heights are preserved. Thoracic aorta diameter is normal. No enlarged lymph nodes in prevascular, pre-paratracheal, subcarinal or bilateral hilar-axillary pathological dimensions were detected. Bone structures in the study area are natural. Trachea, both main bronchi are open. Mediastinal main vascular structures, heart contour, size are normal. Upper abdominal organs included in the sections are normal. No space-occupying lesion was detected in the liver that entered the cross-sectional area. Thoracic esophagus calibration was normal and no significant tumoral wall thickening was detected."
    },
    "meta": {
-    "volume": "valid_1003_a_1.nii.gz",
+    "volume": "valid_1005_a_1.nii.gz",
     "abnormality_labels": [
-     "Lymphadenopathy"
+     "Pericardial effusion",
+     "Lymphadenopathy",
+     "Emphysema",
+     "Atelectasis",
+     "Pleural effusion",
+     "Peribronchial thickening"
     ]
    }
   }
