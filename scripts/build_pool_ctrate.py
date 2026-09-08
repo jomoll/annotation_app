@@ -15,6 +15,10 @@ Inputs (all CSV):
                  per-region "The region N is X: ..." format is flattened automatically.
 
 Selection:
+  * --candidates-per-study K: every study gets K of the candidate sets (default: all of them).
+    With K=1 the models are spread equally and randomly over the studies, so each reference is
+    rated against exactly one candidate — the right design for validating a metric, where
+    independent, diverse pairs matter more than paired model comparisons.
   * only volumes for which EVERY candidate set has a non-empty prediction
   * one volume per patient (CT-RATE volume ids are <split>_<patient>_<study>_<recon>; different
     reconstructions of the same study carry the same report)
@@ -90,6 +94,8 @@ def main(argv=None) -> int:
     ap.add_argument("--candidate", action="append", metavar="NAME=PATH", help="repeatable; defaults to the four project sets")
     ap.add_argument("--n-studies", type=int, default=100)
     ap.add_argument("--quotas", default="0.15,0.30,0.30,0.25", help="fractions for label-count bins 0 / 1-2 / 3-4 / 5+")
+    ap.add_argument("--candidates-per-study", type=int, default=0,
+                    help="how many candidate sets each study gets (0 = all); spread equally and randomly")
     ap.add_argument("--seed", type=int, default=17)
     ap.add_argument("--out", type=Path, default=ROOT / "data" / "cases.json")
     args = ap.parse_args(argv)
@@ -146,6 +152,30 @@ def main(argv=None) -> int:
     print(f"picked {len(picked)} studies; label-count bins: "
           + ", ".join(f"{k}:{sum(1 for v in picked if bin_of(v) == k)}" for k in range(4)))
 
+    # which candidate sets each study gets: all of them, or K per study balanced across models
+    names = list(candidates)
+    k = args.candidates_per_study or len(names)
+    k = min(k, len(names))
+    if k == len(names):
+        allocation = {v: names for v in picked}
+    else:
+        order = list(picked)
+        rng.shuffle(order)
+        slots = []
+        while len(slots) < len(order) * k:
+            block = list(names)
+            rng.shuffle(block)
+            slots += block
+        allocation = {}
+        for i, v in enumerate(order):
+            chosen = slots[i * k:(i + 1) * k]
+            while len(set(chosen)) < k:  # avoid the same model twice in one study at a block boundary
+                rng.shuffle(chosen)
+                chosen = list(dict.fromkeys(chosen)) + [n for n in names if n not in chosen][: k - len(set(chosen))]
+            allocation[v] = chosen
+        from collections import Counter
+        print("candidates per model:", dict(sorted(Counter(n for c in allocation.values() for n in c).items())))
+
     cases = []
     for v in picked:
         r = reports.loc[v]
@@ -157,7 +187,8 @@ def main(argv=None) -> int:
         }
         study_id = v.replace(".nii.gz", "")
         pos_labels = [c for c in label_names if v in n_pos.index and int(lab.loc[v, c]) == 1] if label_names else []
-        for name, s in candidates.items():
+        for name in allocation[v]:
+            s = candidates[name]
             cases.append({
                 "id": f"{study_id}__{name}",
                 "study_id": study_id,
@@ -177,13 +208,14 @@ def main(argv=None) -> int:
             "n_cases": len(cases),
             "seed": args.seed,
             "quotas": quotas,
+            "candidates_per_study": k,
             "reg2rg_flattened": True,
         },
         "cases": cases,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
-    print(f"wrote {len(cases)} cases ({len(picked)} studies x {len(candidates)} candidates) -> {args.out}")
+    print(f"wrote {len(cases)} cases ({len(picked)} studies x {k} candidate(s) per study) -> {args.out}")
     return 0
 
 

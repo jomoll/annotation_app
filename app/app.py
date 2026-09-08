@@ -12,6 +12,7 @@ Run (bind to localhost and reach it through an SSH tunnel if the data is sensiti
 from __future__ import annotations
 
 import html
+from collections import Counter
 
 import pandas as pd
 import streamlit as st
@@ -106,11 +107,17 @@ def overview_page():
             "always judging it *relative to the reference* — the reference is the ground truth here, even if "
             "you would have worded it differently yourself."
         )
+        per_study = max(Counter(c["study_id"] for c in CASES).values()) if CASES else 1
+        if per_study > 1:
+            layout = (f"- You are assigned **{STUDIES_PER_RATER} studies**. For each study you rate all its "
+                      f"{per_study} candidates back to back, so the reference only has to be read once.\n")
+        else:
+            layout = (f"- You are assigned **{STUDIES_PER_RATER} studies**, each with exactly one candidate report — "
+                      "every case is a fresh reference.\n")
         st.markdown(
             f"- The candidates come from **{n_cands} different systems**; which system produced a given "
             "candidate is hidden and the order is shuffled.\n"
-            f"- You are assigned **{STUDIES_PER_RATER} studies**. For each study you rate all its "
-            f"{n_cands} candidates back to back, so the reference only has to be read once.\n"
+            + layout +
             "- Answers are **saved automatically** whenever you move to another case. You can stop at any "
             "time and continue later; the app resumes where you left off.\n"
             "- Cases you have completed are marked with ✓ in the case selector."
@@ -180,10 +187,8 @@ def _render_reference(ref: dict):
 
 
 def _render_candidate(cand: dict, pos_in_study: int, n_in_study: int):
-    st.markdown(
-        f'<div class="cmp-head sys">Candidate report · {pos_in_study} of {n_in_study} for this study</div>',
-        unsafe_allow_html=True,
-    )
+    suffix = f" · {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else ""
+    st.markdown(f'<div class="cmp-head sys">Candidate report{suffix}</div>', unsafe_allow_html=True)
     text = (cand.get("text") or "").strip()
     if not text:
         st.markdown('<div class="report-text"><i>(empty candidate report)</i></div>', unsafe_allow_html=True)
@@ -285,11 +290,13 @@ def cases_page(rater_slug: str):
                 st.success("Saved — thank you, that was your last case.")
 
     n_done = sum(1 for cid in case_ids if _is_complete(ratings.get(cid, {})))
-    labels = [
-        f"{'✓ ' if _is_complete(ratings.get(c['id'], {})) else ''}Case {i+1} · study {c['study_id']} · candidate "
-        f"{[s['id'] for s in my_cases if s['study_id'] == c['study_id']].index(c['id']) + 1}"
-        for i, c in enumerate(my_cases)
-    ]
+    def _label(i, c):
+        sibs = [s["id"] for s in my_cases if s["study_id"] == c["study_id"]]
+        done = "✓ " if _is_complete(ratings.get(c["id"], {})) else ""
+        cand = f" · candidate {sibs.index(c['id']) + 1}" if len(sibs) > 1 else ""
+        return f"{done}Case {i+1} · study {c['study_id']}{cand}"
+
+    labels = [_label(i, c) for i, c in enumerate(my_cases)]
     sel_col, prog_col = st.columns([3, 1])
     chosen = sel_col.selectbox(f"Case ({idx+1} of {len(my_cases)})", labels, index=idx)
     prog_col.metric("Completed", f"{n_done} / {len(my_cases)}")
@@ -300,8 +307,8 @@ def cases_page(rater_slug: str):
         st.rerun()
     _nav_buttons("top")
 
-    st.caption(f"Study {study_no} of {n_studies} · candidate {pos_in_study} of {n_in_study} for this study. "
-               "Judge the candidate relative to the reference.")
+    where = f"Study {study_no} of {n_studies}" + (f" · candidate {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else "")
+    st.caption(f"{where}. Judge the candidate relative to the reference.")
 
     col_ref, col_cand = st.columns(2)
     with col_ref:

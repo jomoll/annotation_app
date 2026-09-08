@@ -31,9 +31,9 @@ reference report (left) · candidate report (right) · six questions below
    Answers autosave on every navigation and are prefilled when the rater comes
    back. Completed cases get a ✓ in the case selector.
 
-Each rater is assigned a fixed set of **studies**; for every study they rate all
-its candidates back to back (reference read once), in a rater-specific shuffled
-order, with the model identity hidden. Studies are handed out least-covered-first
+Each rater is assigned a fixed set of **studies**; for every study they rate
+its candidate(s), with the model identity hidden. If a study has several
+candidates they come back to back in a rater-specific shuffled order. Studies are handed out least-covered-first
 so every study reaches the target number of raters before any gets more.
 
 Admins additionally get **Admin: Ratings** — progress per rater, mean scores per
@@ -73,7 +73,7 @@ SSH tunnel (`ssh -L 8750:127.0.0.1:8750 host`) rather than exposing the port.
 ## Build the CT-RATE pool
 
 ```bash
-python scripts/build_pool_ctrate.py --n-studies 100 --seed 17
+python scripts/build_pool_ctrate.py --n-studies 200 --candidates-per-study 1 --seed 17
 ```
 
 Inputs (CSV, text only): the CT-RATE validation reports and abnormality labels
@@ -83,9 +83,14 @@ Dia-LLaMA, Reg2RG, M3D and RadFM on the RadGenome-ChestCT test split
 `data/raw/` in the Hugging Face layout; pass `--reports`, `--labels` and
 `--candidate NAME=PATH` to point elsewhere.
 
-The script pairs each reference (Findings + Impression) with the four
-candidates, keeps one volume per patient, stratifies by the number of positive
-CT-RATE abnormality labels (0 / 1–2 / 3–4 / 5+) and writes `data/cases.json`.
+The script pairs each reference (Findings + Impression) with candidate reports,
+keeps one volume per patient, stratifies by the number of positive CT-RATE
+abnormality labels (0 / 1–2 / 3–4 / 5+) and writes `data/cases.json`.
+`--candidates-per-study 1` gives every reference exactly one candidate, with the
+models spread equally and randomly over the studies (200 studies = 50 per model).
+That is the design for validating a metric: independent, diverse pairs. Omit the
+flag to get all candidates for every study, which suits paired model comparison
+instead.
 The same `--seed` gives the same pool on every machine. Reg2RG's per-region
 output is flattened to plain prose (the region scaffolding is prompt template,
 not report).
