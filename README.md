@@ -13,8 +13,10 @@ reference report (left) · candidate report (right) · six questions below
 ## What a rater sees
 
 1. **Overview** — a short explanation of the interface and the six questions.
-2. **Cases** — for every case the reference report on the left, one candidate
-   on the right, and the questionnaire underneath:
+2. **Cases** — for every case the reference report, one candidate and the
+   questionnaire side by side, each in its own scrollable box, so the reports
+   stay in view while answering (`QUESTIONS_BESIDE_REPORTS = False` in
+   `app/config.py` puts the questions underneath instead):
 
    | # | Question | Scale |
    |---|---|---|
@@ -30,6 +32,13 @@ reference report (left) · candidate report (right) · six questions below
 
    Answers autosave on every navigation and are prefilled when the rater comes
    back. Completed cases get a ✓ in the case selector.
+
+   **Hover highlighting**: if the cases carry precomputed sentence links (see
+   below), hovering a sentence in one report lights up the sentence(s) describing
+   the same finding in the other report and scrolls them into view. Raters can
+   switch this off under the Logout button (default on, `HIGHLIGHT_DEFAULT` in
+   `app/config.py`); the state is stored with every rating (`highlights_on`), so
+   assisted and unassisted ratings can be compared.
 
 Each rater is assigned a fixed set of **studies**; for every study they rate
 its candidate(s), with the model identity hidden. If a study has several
@@ -56,8 +65,7 @@ Change that password before anyone else can reach the app:
 python -m app.manage set-password admin <new password>
 ```
 
-The admin banner keeps nagging until you do. To make a regular rater account an
-admin instead:
+To make a regular rater account an admin instead:
 
 ```bash
 python -m app.manage set-role you@example.org admin
@@ -99,18 +107,35 @@ not report).
 (CC BY-NC-SA 4.0) and must not be redistributed. The same goes for accounts,
 assignments and ratings.
 
+## Precompute sentence links (optional)
+
+```bash
+export RADMETRIC_LLM_URL=http://localhost:8000/v1 RADMETRIC_LLM_MODEL=gemma-4-31b
+PYTHONPATH=/path/to/radmetric/src python scripts/precompute_links.py data/cases.json
+```
+
+Uses [radmetric](https://github.com/jomoll/radmetric): an LLM extracts clinical
+claims from every sentence of both reports, claims are paired one-to-one across
+the reports, and each pair becomes a link between the two sentences. Only
+matches are stored (character offsets per section), never error categories, so
+the app shows correspondence without leaking the metric's verdicts. Links below a
+matcher score of 0.85 and normality claims about different anatomy are dropped as
+navigation noise. `--no-think` is needed for reasoning models such as Qwen 3.x.
+Which model produced the links is recorded in the pool's `links_meta`.
+
 ## Adapting it to your own data
 
 * **Cases** — write a `data/cases.json` in the schema shown in
   `data/cases.example.json` (see the docstring in `app/cases_data.py`), or copy
   `scripts/build_pool_ctrate.py` and change the loaders. A candidate can be a
-  single `text` or split into `findings` / `impression`.
+  single `text` or split into `findings` / `impression`. `links` are optional.
 * **Questions** — edit `app/questions.py`. Each question is a dict (key, prompt,
   type `likert` or `binary`, per-score anchors; the anchor keys define the scale,
   so 1–3 and 1–5 mix freely). Stored values are the score or option label, so
   rewording anchors never invalidates saved ratings.
-* **Study size / coverage / title** — `app/config.py` (`STUDIES_PER_RATER`,
-  `TARGET_COVERAGE`, `APP_TITLE`, `MODALITY_LABEL`, …).
+* **Study size / coverage / title / layout** — `app/config.py` (`STUDIES_PER_RATER`,
+  `TARGET_COVERAGE`, `APP_TITLE`, `MODALITY_LABEL`, `QUESTIONS_BESIDE_REPORTS`,
+  `PANEL_HEIGHT_PX`, …).
 * **Look** — `app/theme.py` and `app/.streamlit/config.toml`.
 
 ## Accounts and data
@@ -142,8 +167,9 @@ app/
   manage.py       CLI: list-users, set-role, reset-password, export
 scripts/
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
+  precompute_links.py    sentence links between reference and candidate (radmetric)
 data/
-  cases.example.json     example pool: one CT-RATE study with its four candidates (schema reference)
+  cases.example.json     example pool: 5 CT-RATE cases with precomputed links (schema reference)
 ```
 
 ## License

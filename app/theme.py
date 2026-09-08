@@ -21,6 +21,11 @@ THEME_CSS = """
 
 /* ---- base ---- */
 [data-testid="stAppViewContainer"], [data-testid="stHeader"]{ background:var(--bg); }
+/* No Streamlit toolbar (Deploy / menu) and a tight top margin: on the Cases page every pixel of
+   height goes to the three side-by-side boxes. */
+[data-testid="stHeader"]{ display:none; }
+[data-testid="stMainBlockContainer"], .block-container{ padding-top:1.2rem !important; padding-bottom:1rem !important; }
+hr{ margin:.6rem 0 !important; }
 html, body, [class*="css"]{ font-family:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
 h1,h2,h3,h4,h5,h6{ letter-spacing:-.01em; }
 /* Captions carry the rating instructions — treat them as body copy, not decoration. */
@@ -102,11 +107,28 @@ h1,h2,h3,h4,h5,h6{ letter-spacing:-.01em; }
   padding:9px 14px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
   border-radius:var(--radius) var(--radius) 0 0; margin:-1px -1px 12px -1px;
 }
+/* header rendered OUTSIDE a scrollable box (side-by-side layout) */
+.cmp-head.standalone{ margin:0 0 6px 0; border-radius:10px; border:1px solid transparent; }
+/* scrollable boxes of the side-by-side layout: never taller than the viewport */
+/* Streamlit puts the inline height on the border wrapper (wrapper > div > .st-key-…), so cap
+   both the wrapper and the keyed block: the boxes end at the bottom of the viewport. */
+[data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_ref),
+[data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_cand),
+[data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_q),
+.st-key-panel_ref, .st-key-panel_cand, .st-key-panel_q{
+  height:min(var(--panel-h, 720px), calc(100vh - 300px)) !important;
+  max-height:min(var(--panel-h, 720px), calc(100vh - 300px)) !important;
+}
 .cmp-head.gold{ background:var(--gold); color:var(--gold-text); border-bottom:1px solid var(--gold-border); }
+.cmp-head.q{ background:var(--gray-bg); color:var(--text-dim); border-bottom:1px solid var(--gray-border); }
 .cmp-head.sys{ background:var(--accent-bg); color:var(--accent-dark); border-bottom:1px solid var(--accent-bg-2); }
 .report-label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); margin:10px 0 2px; }
 .report-text{ font-size:15px; line-height:1.65; color:var(--text); white-space:pre-wrap; }
 .report-meta{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+
+/* ---- linked sentences (hover highlighting) ---- */
+.lnk{ text-decoration:underline dotted rgba(8,145,178,.45); text-underline-offset:3px; text-decoration-thickness:1px; cursor:default; border-radius:3px; }
+.lnk.hl{ background:var(--accent-bg-2); text-decoration-color:var(--accent); }
 
 /* ---- scale definitions ---- */
 .scale-def{ font-size:13.5px; color:var(--text-dim); line-height:1.55; margin:2px 0 0; }

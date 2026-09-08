@@ -115,12 +115,6 @@ def ensure_default_admin() -> None:
     _save_accounts(accounts)
 
 
-def default_admin_password_active() -> bool:
-    """True while the seeded admin account still uses the well-known default password."""
-    acc = load_accounts().get(DEFAULT_ADMIN_USER)
-    return bool(acc) and verify_password(DEFAULT_ADMIN_PASSWORD, acc.get("password_hash", ""))
-
-
 def set_role(email: str, role: str) -> bool:
     email = email.strip().lower()
     accounts = load_accounts()

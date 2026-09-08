@@ -16,13 +16,15 @@ from collections import Counter
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 import assignment
 import auth
 import progress
 import storage
 from cases_data import CASES, CASES_BY_ID, CANDIDATE_IDS, POOL_META, STUDY_IDS, USING_EXAMPLE
-from config import APP_SUBTITLE, APP_TITLE, MODALITY_LABEL, POSITIONS, STUDIES_PER_RATER
+from config import (APP_SUBTITLE, APP_TITLE, HIGHLIGHT_DEFAULT, MODALITY_LABEL, PANEL_HEIGHT_PX, POSITIONS,
+                    QUESTIONS_BESIDE_REPORTS, STUDIES_PER_RATER)
 from questions import QUESTIONS, REQUIRED_KEYS, likert_values
 from theme import THEME_CSS, badge
 
@@ -167,8 +169,75 @@ def _render_scale_definitions(q: dict):
 # ============================================================
 # Cases page
 # ============================================================
-def _render_reference(ref: dict):
-    st.markdown('<div class="cmp-head gold">Reference report (original)</div>', unsafe_allow_html=True)
+# ---- hover highlighting of linked sentences ---------------------------------
+def _highlights_on() -> bool:
+    return bool(st.session_state.get("hl_on", HIGHLIGHT_DEFAULT))
+
+
+def _linked_html(text: str, spans: list[tuple[int, int, list[int]]]) -> str:
+    """Escape `text`, wrapping each (start, end, link ids) span in a hoverable <span>."""
+    out, pos = [], 0
+    for start, end, ids in sorted(spans):
+        if start < pos:
+            continue
+        out.append(_esc(text[pos:start]))
+        out.append(f'<span class="lnk" data-l="{",".join(str(i) for i in sorted(set(ids)))}">{_esc(text[start:end])}</span>')
+        pos = end
+    out.append(_esc(text[pos:]))
+    return "".join(out)
+
+
+def _link_spans(case: dict, side: str) -> dict[str, list[tuple[int, int, list[int]]]]:
+    """{section: [(start, end, [link ids])]} for one side ("ref" or "cand") of the case's links."""
+    by_section: dict[str, dict[tuple[int, int], list[int]]] = {}
+    for i, link in enumerate(case.get("links") or []):
+        loc = link[side]
+        by_section.setdefault(loc["section"], {}).setdefault((loc["start"], loc["end"]), []).append(i)
+    return {sec: [(a, b, ids) for (a, b), ids in d.items()] for sec, d in by_section.items()}
+
+
+def _report_text(text: str, spans: list[tuple[int, int, list[int]]] | None):
+    body = _linked_html(text, spans) if spans else _esc(text)
+    st.markdown(f'<div class="report-text">{body}</div>', unsafe_allow_html=True)
+
+
+_LINK_JS = """<script>
+(function(){
+  const P = window.parent; const D = P.document;
+  if (P.__lnkBound) return; P.__lnkBound = true;
+  const ids = el => (el.dataset.l || '').split(',');
+  function clear(){ D.querySelectorAll('.lnk.hl').forEach(x => x.classList.remove('hl')); }
+  D.addEventListener('mouseover', e => {
+    const t = e.target.closest ? e.target.closest('.lnk') : null;
+    clear(); if (!t) return;
+    const mine = ids(t); const box = t.closest('[data-testid="stVerticalBlockBorderWrapper"]');
+    let first = null;
+    D.querySelectorAll('.lnk').forEach(x => {
+      if (ids(x).some(i => mine.includes(i))) {
+        x.classList.add('hl');
+        if (!first && x !== t && x.closest('[data-testid="stVerticalBlockBorderWrapper"]') !== box) first = x;
+      }
+    });
+    if (first) first.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+  });
+  D.addEventListener('mouseout', e => {
+    const t = e.target.closest ? e.target.closest('.lnk') : null;
+    const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.lnk') : null;
+    if (t && !to) clear();
+  });
+})();
+</script>"""
+
+
+def _inject_link_js():
+    # Real JS only runs inside components.html's iframe; same-origin, so it can reach the
+    # parent page and attach one delegated hover listener there (guarded against reruns).
+    components.html(_LINK_JS, height=0)
+
+
+def _render_reference(ref: dict, header: bool = True, spans: dict | None = None):
+    if header:
+        st.markdown('<div class="cmp-head gold">Reference report (original)</div>', unsafe_allow_html=True)
     meta_bits = []
     ci = (ref.get("clinical_information") or "").strip()
     if ci and ci.lower() not in {"not given.", "not given", ""}:
@@ -178,32 +247,40 @@ def _render_reference(ref: dict):
         meta_bits.append(f"<b>Technique:</b> {_esc(tech)}")
     if meta_bits:
         st.markdown('<div class="report-meta">' + "<br>".join(meta_bits) + "</div>", unsafe_allow_html=True)
+    spans = spans or {}
     if ref.get("findings"):
         st.markdown('<div class="report-label">Findings</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="report-text">{_esc(ref["findings"].strip())}</div>', unsafe_allow_html=True)
+        _report_text(ref["findings"], spans.get("findings"))
     if ref.get("impression"):
         st.markdown('<div class="report-label">Impression</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="report-text">{_esc(ref["impression"].strip())}</div>', unsafe_allow_html=True)
+        _report_text(ref["impression"], spans.get("impression"))
 
 
-def _render_candidate(cand: dict, pos_in_study: int, n_in_study: int):
+def _candidate_title(pos_in_study: int, n_in_study: int) -> str:
     suffix = f" · {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else ""
-    st.markdown(f'<div class="cmp-head sys">Candidate report{suffix}</div>', unsafe_allow_html=True)
+    return f"Candidate report{suffix}"
+
+
+def _render_candidate(cand: dict, pos_in_study: int, n_in_study: int, header: bool = True, spans: dict | None = None):
+    if header:
+        st.markdown(f'<div class="cmp-head sys">{_candidate_title(pos_in_study, n_in_study)}</div>',
+                    unsafe_allow_html=True)
     text = (cand.get("text") or "").strip()
     if not text:
         st.markdown('<div class="report-text"><i>(empty candidate report)</i></div>', unsafe_allow_html=True)
         return
+    spans = spans or {}
     if cand.get("findings") or cand.get("impression"):
         # structured candidate — same layout as the reference
         if cand.get("findings"):
             st.markdown('<div class="report-label">Findings</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="report-text">{_esc(cand["findings"].strip())}</div>', unsafe_allow_html=True)
+            _report_text(cand["findings"], spans.get("findings"))
         if cand.get("impression"):
             st.markdown('<div class="report-label">Impression</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="report-text">{_esc(cand["impression"].strip())}</div>', unsafe_allow_html=True)
+            _report_text(cand["impression"], spans.get("impression"))
     else:
         st.markdown('<div class="report-label">Report</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="report-text">{_esc(text)}</div>', unsafe_allow_html=True)
+        _report_text(cand["text"], spans.get("text"))
 
 
 def _render_question(i: int, q: dict, case_id: str, existing: dict):
@@ -249,13 +326,14 @@ def cases_page(rater_slug: str):
             v = ss.get(_widget_key(q["key"], cid))
             out[q["key"]] = "" if v is None else str(v)
         out["comment"] = ss.get(_widget_key("comment", cid)) or ""
+        out["highlights_on"] = "on" if _highlights_on() else "off"
         return out
 
     def _autosave_if_needed(cid: str):
         # No separate save button: every navigation saves what is currently filled in. Skipped
         # when nothing was touched, so merely browsing past a case doesn't create a blank row.
         rating = _gather_rating(cid)
-        if any(v.strip() for v in rating.values()):
+        if any(v.strip() for k, v in rating.items() if k != "highlights_on"):
             storage.save_rating(rater_slug, CASES_BY_ID[cid], rating)
 
     if "case_idx" not in st.session_state:
@@ -273,61 +351,98 @@ def cases_page(rater_slug: str):
     study_no = len(dict.fromkeys(c["study_id"] for c in my_cases[: study_no + 1]))
     n_studies = len(dict.fromkeys(c["study_id"] for c in my_cases))
 
-    def _nav_buttons(pos: str):
-        nav_prev, mid, nav_next = st.columns([1, 3, 1])
-        if nav_prev.button("← Save & Previous", disabled=idx == 0, key=f"nav_prev_{pos}", width="stretch"):
-            _autosave_if_needed(case["id"])
-            st.session_state["case_idx"] = idx - 1
-            st.rerun()
-        if nav_next.button("Save & Next →", disabled=idx == len(my_cases) - 1, key=f"nav_next_{pos}",
-                           type="primary", width="stretch"):
-            _autosave_if_needed(case["id"])
-            st.session_state["case_idx"] = idx + 1
-            st.rerun()
-        if pos == "bottom" and idx == len(my_cases) - 1:
-            if mid.button("Save (last case)", key="nav_save_last", width="stretch"):
-                _autosave_if_needed(case["id"])
-                st.success("Saved — thank you, that was your last case.")
+    def _go(new_idx: int):
+        _autosave_if_needed(case["id"])
+        st.session_state["case_idx"] = new_idx
+        st.rerun()
 
     n_done = sum(1 for cid in case_ids if _is_complete(ratings.get(cid, {})))
+
     def _label(i, c):
         sibs = [s["id"] for s in my_cases if s["study_id"] == c["study_id"]]
         done = "✓ " if _is_complete(ratings.get(c["id"], {})) else ""
         cand = f" · candidate {sibs.index(c['id']) + 1}" if len(sibs) > 1 else ""
-        return f"{done}Case {i+1} · study {c['study_id']}{cand}"
+        return f"{done}Case {i+1} of {len(my_cases)} · study {c['study_id']}{cand}"
 
     labels = [_label(i, c) for i, c in enumerate(my_cases)]
-    sel_col, prog_col = st.columns([3, 1])
-    chosen = sel_col.selectbox(f"Case ({idx+1} of {len(my_cases)})", labels, index=idx)
-    prog_col.metric("Completed", f"{n_done} / {len(my_cases)}")
-    new_idx = labels.index(chosen)
-    if new_idx != idx:
-        _autosave_if_needed(case["id"])
-        st.session_state["case_idx"] = new_idx
-        st.rerun()
-    _nav_buttons("top")
 
+    def _on_select(key: str, current_id: str):
+        # Runs before the rerun when the rater picks a case in the dropdown: save what is filled
+        # in for the case they are leaving, then jump. (A plain value comparison after rendering
+        # cannot tell a user pick from the widget's stale state after Next/Previous.)
+        chosen = st.session_state.get(key)
+        if chosen in labels:
+            _autosave_if_needed(current_id)
+            st.session_state["case_idx"] = labels.index(chosen)
+
+    def _nav_row(pos: str):
+        # one compact row: previous · case selector · next · progress — same row top and bottom
+        c_prev, c_sel, c_next, c_done = st.columns([1.2, 4, 1.2, 1.1], vertical_alignment="center")
+        if c_prev.button("← Save & Previous", disabled=idx == 0, key=f"nav_prev_{pos}", width="stretch"):
+            _go(idx - 1)
+        key = f"case_select_{pos}"
+        st.session_state[key] = labels[idx]  # keep the dropdown in step with the current case
+        c_sel.selectbox("Case", labels, key=key, label_visibility="collapsed",
+                        on_change=_on_select, args=(key, case["id"]))
+        if idx < len(my_cases) - 1:
+            if c_next.button("Save & Next →", key=f"nav_next_{pos}", type="primary", width="stretch"):
+                _go(idx + 1)
+        elif c_next.button("Save", key=f"nav_save_{pos}", type="primary", width="stretch"):
+            _autosave_if_needed(case["id"])
+            st.toast("Saved — that was your last case. Thank you!")
+        c_done.markdown(badge(f"Completed {n_done} / {len(my_cases)}", "green" if n_done == len(my_cases) else "gray"),
+                        unsafe_allow_html=True)
+
+    _nav_row("top")
     where = f"Study {study_no} of {n_studies}" + (f" · candidate {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else "")
-    st.caption(f"{where}. Judge the candidate relative to the reference.")
-
-    col_ref, col_cand = st.columns(2)
-    with col_ref:
-        with st.container(border=True):
-            _render_reference(case["reference"])
-    with col_cand:
-        with st.container(border=True):
-            _render_candidate(case["candidate"], pos_in_study, n_in_study)
+    guidance = f"{where} · judge the candidate relative to the reference."
 
     existing = ratings.get(case["id"], {})
-    with st.container(border=True):
-        st.markdown(f"##### Your rating · Case {idx+1} of {len(my_cases)}")
+
+    def _questions():
+        st.caption(guidance)
         for i, q in enumerate(QUESTIONS):
             _render_question(i, q, case["id"], existing)
         st.text_area("Comment (optional)", value=existing.get("comment", ""),
                      placeholder="Anything notable — e.g. the specific error you saw…",
                      key=_widget_key("comment", case["id"]))
 
-    _nav_buttons("bottom")
+    use_links = _highlights_on() and bool(case.get("links"))
+    ref_spans = _link_spans(case, "ref") if use_links else None
+    cand_spans = _link_spans(case, "cand") if use_links else None
+    if use_links:
+        _inject_link_js()
+
+    if QUESTIONS_BESIDE_REPORTS:
+        # Three scrollable boxes side by side: the reports stay in view while the rater scrolls
+        # through the questions. Headers sit above the boxes so they never scroll away.
+        st.markdown(f"<style>:root{{--panel-h:{int(PANEL_HEIGHT_PX)}px}}</style>", unsafe_allow_html=True)
+        col_ref, col_cand, col_q = st.columns([1.15, 1.15, 1])
+        with col_ref:
+            st.markdown('<div class="cmp-head gold standalone">Reference report (original)</div>', unsafe_allow_html=True)
+            with st.container(border=True, height=PANEL_HEIGHT_PX, key="panel_ref"):
+                _render_reference(case["reference"], header=False, spans=ref_spans)
+        with col_cand:
+            st.markdown(f'<div class="cmp-head sys standalone">{_candidate_title(pos_in_study, n_in_study)}</div>',
+                        unsafe_allow_html=True)
+            with st.container(border=True, height=PANEL_HEIGHT_PX, key="panel_cand"):
+                _render_candidate(case["candidate"], pos_in_study, n_in_study, header=False, spans=cand_spans)
+        with col_q:
+            st.markdown(f'<div class="cmp-head standalone q">Your rating · case {idx+1} of {len(my_cases)}</div>', unsafe_allow_html=True)
+            with st.container(border=True, height=PANEL_HEIGHT_PX, key="panel_q"):
+                _questions()
+    else:
+        col_ref, col_cand = st.columns(2)
+        with col_ref:
+            with st.container(border=True):
+                _render_reference(case["reference"], spans=ref_spans)
+        with col_cand:
+            with st.container(border=True):
+                _render_candidate(case["candidate"], pos_in_study, n_in_study, spans=cand_spans)
+        with st.container(border=True):
+            _questions()
+
+    _nav_row("bottom")
 
 
 # ============================================================
@@ -426,14 +541,17 @@ def main():
         st.session_state["page"] = {v: k for k, v in page_labels.items()}[page]
     with user_col:
         u1, u2 = st.columns([2, 1])
-        u1.markdown(f"**{name}**  \n_{email}_" + (" · 🔑 admin" if is_admin else ""))
+        u1.markdown(f"**{_esc(name)}**" + (" · 🔑 admin" if is_admin else ""))
         if u2.button("Logout"):
             st.session_state["auth"] = None
             st.rerun()
+        if "hl_on" not in st.session_state:
+            st.session_state["hl_on"] = HIGHLIGHT_DEFAULT
+        st.toggle("Highlight matching findings", key="hl_on",
+                  help="Hover a sentence in one report to light up the corresponding sentence(s) in the other. "
+                       "Matches were precomputed automatically and can be wrong or missing — they are a "
+                       "navigation aid, not a judgment.")
     st.caption(f"{APP_TITLE} · research prototype · not for clinical use")
-    if is_admin and auth.default_admin_password_active():
-        st.warning("The built-in `admin` account still has the default password. Change it: "
-                   "`python -m app.manage set-password admin <new password>`", icon="⚠️")
     st.divider()
 
     if st.session_state["page"] == "overview":

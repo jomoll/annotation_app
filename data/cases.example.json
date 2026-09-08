@@ -1,6 +1,6 @@
 {
  "meta": {
-  "note": "Example pool: one real CT-RATE study (valid_1005_a_1) with its four candidate reports, taken from data/cases.json. Internal use only — CT-RATE text is gated (CC BY-NC-SA 4.0) and must not be redistributed publicly. Replace with data/cases.json built by scripts/build_pool_ctrate.py for the real study.",
+  "note": "Example pool: one real CT-RATE study (valid_1005_a_1) with its four candidate reports plus one further study (valid_1006_a_1) with a single candidate, taken from data/cases.json, with precomputed sentence links. Internal use only — CT-RATE text is gated (CC BY-NC-SA 4.0) and must not be redistributed publicly. Replace with data/cases.json built by scripts/build_pool_ctrate.py for the real study.",
   "dataset": "CT-RATE validation split (RadGenome-ChestCT test split)",
   "candidates": [
    "dia_llama",
@@ -8,7 +8,16 @@
    "m3d",
    "radfm"
   ],
-  "reg2rg_flattened": true
+  "reg2rg_flattened": true,
+  "links_meta": {
+   "computed_at": "2026-09-08T20:05:44.926732+00:00",
+   "method": "radmetric claim extraction + Hungarian matching, aggregated to sentence pairs",
+   "llm_model": "qwen38",
+   "llm_url": "http://localhost:8048/v1",
+   "no_think": true,
+   "match_threshold": 0.62,
+   "min_score": 0.85
+  }
  },
  "cases": [
   {
@@ -34,7 +43,135 @@
      "Pleural effusion",
      "Peribronchial thickening"
     ]
-   }
+   },
+   "links": [
+    {
+     "ref": {
+      "section": "findings",
+      "start": 0,
+      "end": 48
+     },
+     "cand": {
+      "section": "text",
+      "start": 408,
+      "end": 447
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 49,
+      "end": 131
+     },
+     "cand": {
+      "section": "text",
+      "start": 729,
+      "end": 802
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 224,
+      "end": 396
+     },
+     "cand": {
+      "section": "text",
+      "start": 1330,
+      "end": 1436
+     },
+     "score": 1.0,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 593,
+      "end": 623
+     },
+     "cand": {
+      "section": "text",
+      "start": 628,
+      "end": 689
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 685,
+      "end": 734
+     },
+     "cand": {
+      "section": "text",
+      "start": 690,
+      "end": 728
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 735,
+      "end": 838
+     },
+     "cand": {
+      "section": "text",
+      "start": 0,
+      "end": 93
+     },
+     "score": 0.864,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 884,
+      "end": 977
+     },
+     "cand": {
+      "section": "text",
+      "start": 1096,
+      "end": 1129
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1218,
+      "end": 1308
+     },
+     "cand": {
+      "section": "text",
+      "start": 1437,
+      "end": 1470
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1309,
+      "end": 1369
+     },
+     "cand": {
+      "section": "text",
+      "start": 161,
+      "end": 247
+     },
+     "score": 1.144,
+     "claims": 1
+    }
+   ]
   },
   {
    "id": "valid_1005_a_1__reg2rg",
@@ -59,7 +196,135 @@
      "Pleural effusion",
      "Peribronchial thickening"
     ]
-   }
+   },
+   "links": [
+    {
+     "ref": {
+      "section": "findings",
+      "start": 0,
+      "end": 48
+     },
+     "cand": {
+      "section": "text",
+      "start": 1639,
+      "end": 1678
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 49,
+      "end": 131
+     },
+     "cand": {
+      "section": "text",
+      "start": 1565,
+      "end": 1638
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 224,
+      "end": 396
+     },
+     "cand": {
+      "section": "text",
+      "start": 1418,
+      "end": 1483
+     },
+     "score": 0.95,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 593,
+      "end": 623
+     },
+     "cand": {
+      "section": "text",
+      "start": 766,
+      "end": 827
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 735,
+      "end": 838
+     },
+     "cand": {
+      "section": "text",
+      "start": 675,
+      "end": 765
+     },
+     "score": 0.864,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 884,
+      "end": 977
+     },
+     "cand": {
+      "section": "text",
+      "start": 955,
+      "end": 1074
+     },
+     "score": 0.95,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 884,
+      "end": 977
+     },
+     "cand": {
+      "section": "text",
+      "start": 1484,
+      "end": 1532
+     },
+     "score": 1.05,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1091,
+      "end": 1149
+     },
+     "cand": {
+      "section": "text",
+      "start": 1075,
+      "end": 1121
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1309,
+      "end": 1369
+     },
+     "cand": {
+      "section": "text",
+      "start": 236,
+      "end": 322
+     },
+     "score": 1.144,
+     "claims": 1
+    }
+   ]
   },
   {
    "id": "valid_1005_a_1__m3d",
@@ -84,7 +349,79 @@
      "Pleural effusion",
      "Peribronchial thickening"
     ]
-   }
+   },
+   "links": [
+    {
+     "ref": {
+      "section": "findings",
+      "start": 0,
+      "end": 48
+     },
+     "cand": {
+      "section": "text",
+      "start": 783,
+      "end": 819
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 624,
+      "end": 684
+     },
+     "cand": {
+      "section": "text",
+      "start": 904,
+      "end": 973
+     },
+     "score": 1.0,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 884,
+      "end": 977
+     },
+     "cand": {
+      "section": "text",
+      "start": 0,
+      "end": 45
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1218,
+      "end": 1308
+     },
+     "cand": {
+      "section": "text",
+      "start": 46,
+      "end": 126
+     },
+     "score": 1.2,
+     "claims": 2
+    },
+    {
+     "ref": {
+      "section": "impression",
+      "start": 114,
+      "end": 168
+     },
+     "cand": {
+      "section": "text",
+      "start": 0,
+      "end": 45
+     },
+     "score": 0.976,
+     "claims": 1
+    }
+   ]
   },
   {
    "id": "valid_1005_a_1__radfm",
@@ -109,7 +446,218 @@
      "Pleural effusion",
      "Peribronchial thickening"
     ]
-   }
+   },
+   "links": [
+    {
+     "ref": {
+      "section": "findings",
+      "start": 0,
+      "end": 48
+     },
+     "cand": {
+      "section": "text",
+      "start": 597,
+      "end": 633
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 224,
+      "end": 396
+     },
+     "cand": {
+      "section": "text",
+      "start": 414,
+      "end": 549
+     },
+     "score": 1.03,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 624,
+      "end": 684
+     },
+     "cand": {
+      "section": "text",
+      "start": 634,
+      "end": 703
+     },
+     "score": 1.0,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 685,
+      "end": 734
+     },
+     "cand": {
+      "section": "text",
+      "start": 0,
+      "end": 49
+     },
+     "score": 1.2,
+     "claims": 2
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 735,
+      "end": 838
+     },
+     "cand": {
+      "section": "text",
+      "start": 855,
+      "end": 953
+     },
+     "score": 1.2,
+     "claims": 2
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 884,
+      "end": 977
+     },
+     "cand": {
+      "section": "text",
+      "start": 50,
+      "end": 95
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1218,
+      "end": 1308
+     },
+     "cand": {
+      "section": "text",
+      "start": 96,
+      "end": 176
+     },
+     "score": 1.2,
+     "claims": 2
+    },
+    {
+     "ref": {
+      "section": "impression",
+      "start": 114,
+      "end": 168
+     },
+     "cand": {
+      "section": "text",
+      "start": 50,
+      "end": 95
+     },
+     "score": 0.976,
+     "claims": 1
+    }
+   ]
+  },
+  {
+   "id": "valid_1006_a_1__dia_llama",
+   "study_id": "valid_1006_a_1",
+   "candidate_id": "dia_llama",
+   "reference": {
+    "clinical_information": "Abdominal pain, infection?",
+    "technique": "Non-contrast images were taken in the axial plane with a section thickness of 1.5 mm.",
+    "findings": "Millimetric calcific foci are observed in the thyroid parenchyma. Trachea, both main bronchi are open. Mediastinal main vascular structures, heart contour, size are normal. Thoracic aorta diameter is normal. A venous catheter is observed in the superior vena cava. There is a smear-like pericardial effusion. Thoracic esophagus calibration was normal and no significant tumoral wall thickening was detected. No enlarged lymph nodes in prevascular, pre-paratracheal, subcarinal or bilateral hilar-axillary pathological dimensions were detected. When examined in the lung parenchyma window; There are fibrotic sequelae changes and bronchiectatic findings in the upper lobe of the left lung. At the basal level of the lower lobe of the left lung, atelectasis in the form of thick bands are observed. A smear-like effusion is observed in both hemithorax. No gross pathology was detected in favor of the infectious process. At the level of the sternal junction of the 2nd and 3rd ribs, immediately adjacent to the right lateral of the sternum, the size is 18x11 mm, and the dimensions of the paracardiac subdiaphragmatic area in the upper abdomen are up to 15 mm, 12 mm and 29 mm, which is also observed in more than one previous PET-CT, which is significant numerical and There are findings evaluated in favor of infiltrative tumors that do not differ in size. Effusion is observed in the upper abdomen and perihepatic area. Diffuse density reduction and degenerative changes in bone structures, and tapering in end plates are present.",
+    "impression": "Space-occupying lesions in the upper abdomen, in the subdiaphragmatic area, on the right side, at the level of the 2nd and 3rd ribs and anteriorly, at the level of the sternal junctions.  Millimetric calcific foci in the thyroid parenchyma.  Diffuse degenerative changes in bone structures.  In the lung parenchyma, fibrotic sequela changes in the left lung lower lobe basal segment and upper lobe, atelectasis in the form of thick bands, and no gross pathology evaluated in favor of an infectious process were detected."
+   },
+   "candidate": {
+    "text": "A slight increase in heart size is observed. Sequelae changes and minimal emphysematous changes are observed in both lungs. Trachea and both main bronchi are open. In the upper abdominal sections within the image, no solid mass was detected as far as can be observed within the borders of non-contrast CT. No mass or infiltrative lesion was detected in both lungs. No pathological wall thickness increase was observed in the esophagus within the sections. There are no upper abdominal free fluid-collections or pathologically enlarged lymph nodes in the sections. No lytic-destructive lesions were detected in the bone structures within the sections. No pleural or pericardial effusion or thickening was detected. There are no pathologically enlarged lymph nodes in the mediastinum and hilar regions. Mediastinal structures cannot be evaluated optimally because contrast material is not given. As far as can be observed: The ascending aorta measures 41 mm in diameter and shows slight dilatation. There are no pathologically enlarged lymph nodes. There are minimal bronchiectatic changes and peribronchial thickening in both lungs. There is a sliding type hiatal hernia at the lower end of the esophagus. There are atheromatous plaques in the aorta and coronary arteries. There are millimetric nonspecific nodules in both lungs. There is no obstructive pathology in the trachea and both main bronchi. The left"
+   },
+   "meta": {
+    "volume": "valid_1006_a_1.nii.gz",
+    "abnormality_labels": [
+     "Medical material",
+     "Pericardial effusion",
+     "Atelectasis",
+     "Pulmonary fibrotic sequela",
+     "Pleural effusion",
+     "Bronchiectasis"
+    ]
+   },
+   "links": [
+    {
+     "ref": {
+      "section": "findings",
+      "start": 66,
+      "end": 102
+     },
+     "cand": {
+      "section": "text",
+      "start": 124,
+      "end": 163
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 309,
+      "end": 407
+     },
+     "cand": {
+      "section": "text",
+      "start": 651,
+      "end": 713
+     },
+     "score": 0.865,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 408,
+      "end": 543
+     },
+     "cand": {
+      "section": "text",
+      "start": 714,
+      "end": 800
+     },
+     "score": 0.986,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 589,
+      "end": 688
+     },
+     "cand": {
+      "section": "text",
+      "start": 1047,
+      "end": 1131
+     },
+     "score": 1.2,
+     "claims": 1
+    },
+    {
+     "ref": {
+      "section": "findings",
+      "start": 1357,
+      "end": 1420
+     },
+     "cand": {
+      "section": "text",
+      "start": 651,
+      "end": 713
+     },
+     "score": 1.0,
+     "claims": 1
+    }
+   ]
   }
  ]
 }

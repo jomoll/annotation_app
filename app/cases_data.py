@@ -12,6 +12,8 @@ Case schema (one entry per reference/candidate pair):
     reference     {"clinical_information": str, "technique": str, "findings": str, "impression": str}
     candidate     {"text": str}
     meta          free-form, optional (e.g. abnormality labels)
+    links         optional, from scripts/precompute_links.py: sentence pairs describing the same
+                  finding, as character offsets within a section of each side
 """
 from __future__ import annotations
 

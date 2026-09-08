@@ -17,7 +17,8 @@ from config import DATA_DIR
 from questions import QUESTION_KEYS
 
 ANNOT_DIR = DATA_DIR / "annotations"
-RATING_FIELDS = [*QUESTION_KEYS, "comment"]
+RATING_FIELDS = [*QUESTION_KEYS, "comment",
+                 "highlights_on"]  # "on"/"off": whether hover highlighting was active when saved
 FIELDS = ["rater", "saved_at", "case_id", "study_id", "candidate_id", *RATING_FIELDS]
 
 

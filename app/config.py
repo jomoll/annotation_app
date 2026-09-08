@@ -15,12 +15,27 @@ DATA_DIR = Path(os.environ.get("ANNOTATION_DATA_DIR", ROOT / "data"))
 CASES_PATH = Path(os.environ.get("ANNOTATION_CASES", DATA_DIR / "cases.json"))
 EXAMPLE_CASES_PATH = ROOT / "data" / "cases.example.json"  # bundled with the repo, independent of DATA_DIR
 
+# ---- cases page layout -----------------------------------------------------
+# True: reference | candidate | questions side by side, each in its own scrollable box, so the
+# reports stay in view while scrolling through the questions. False: reports on top, questions
+# below (the page scrolls as a whole).
+QUESTIONS_BESIDE_REPORTS = True
+# Height of the three boxes in pixels (capped to the viewport by theme.py).
+PANEL_HEIGHT_PX = 720
+
+# ---- hover highlighting ----------------------------------------------------
+# Cases may carry precomputed "links" (scripts/precompute_links.py): sentence pairs that
+# describe the same finding in reference and candidate. With highlighting on, hovering a
+# linked sentence lights up its counterpart(s) in the other report and scrolls them into
+# view. Raters can toggle it under the Logout button; the state is stored with every rating.
+HIGHLIGHT_DEFAULT = True
+
 # ---- assignment ------------------------------------------------------------
 # Each rater is assigned a fixed set of studies (volumes); for every assigned
 # study they rate ALL candidate reports of that study, one after the other, so
 # the reference only has to be read once. The candidates of a study appear in
 # a rater-specific random order and the model behind each candidate is hidden.
-STUDIES_PER_RATER = 20
+STUDIES_PER_RATER = 100
 # Studies are handed out least-covered-first so that every study converges to
 # this many raters before any study gets a third one.
 TARGET_COVERAGE = 2
