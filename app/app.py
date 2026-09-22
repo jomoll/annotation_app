@@ -337,8 +337,14 @@ def cases_page(rater_slug: str):
             storage.save_rating(rater_slug, CASES_BY_ID[cid], rating)
 
     if "case_idx" not in st.session_state:
+        # resume where the rater left off; if that case no longer exists (pool was rebalanced),
+        # continue at the first case without a complete rating instead of jumping back to the start
         last = progress.load().get(rater_slug)
-        st.session_state["case_idx"] = case_ids.index(last) if last in case_ids else 0
+        if last in case_ids:
+            st.session_state["case_idx"] = case_ids.index(last)
+        else:
+            st.session_state["case_idx"] = next((i for i, cid in enumerate(case_ids)
+                                                 if not _is_complete(ratings.get(cid, {}))), 0)
     idx = max(0, min(st.session_state["case_idx"], len(my_cases) - 1))
     st.session_state["case_idx"] = idx
     case = my_cases[idx]

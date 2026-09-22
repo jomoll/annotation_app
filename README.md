@@ -107,6 +107,19 @@ not report).
 (CC BY-NC-SA 4.0) and must not be redistributed. The same goes for accounts,
 assignments and ratings.
 
+### Adding a candidate system later
+
+```bash
+python scripts/add_candidate.py NAME=path/to/predictions.jsonl   # or .csv
+python scripts/precompute_links.py data/cases.json               # links for the new cases
+```
+
+Rebalances a one-candidate-per-study pool so every model has an equal share,
+separately within each rater's assigned studies and within the unassigned rest,
+so a rater halfway through keeps a balanced mix. Cases that already have ratings
+are never replaced. The switched studies are logged in the pool's `rebalanced`
+metadata.
+
 ## Precompute sentence links (optional)
 
 ```bash
@@ -168,6 +181,7 @@ app/
 scripts/
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
   precompute_links.py    sentence links between reference and candidate (radmetric)
+  add_candidate.py       add a model to an existing pool, rebalanced, rated cases untouched
 data/
   cases.example.json     example pool: 5 CT-RATE cases with precomputed links (schema reference)
 ```

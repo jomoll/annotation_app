@@ -110,15 +110,20 @@ h1,h2,h3,h4,h5,h6{ letter-spacing:-.01em; }
 /* header rendered OUTSIDE a scrollable box (side-by-side layout) */
 .cmp-head.standalone{ margin:0 0 6px 0; border-radius:10px; border:1px solid transparent; }
 /* scrollable boxes of the side-by-side layout: never taller than the viewport */
-/* Streamlit puts the inline height on the border wrapper (wrapper > div > .st-key-…), so cap
-   both the wrapper and the keyed block: the boxes end at the bottom of the viewport. */
+/* Streamlit sizes a height-limited container through its stLayoutWrapper parent (inline height)
+   and lets the keyed block inside scroll. Cap THAT parent so the boxes end at the bottom of the
+   viewport. Never set a height on the keyed block itself: it is a flex column, and a fixed height
+   makes it squeeze its last children (the comment field) to zero. */
+[data-testid="stLayoutWrapper"]:has(> .st-key-panel_ref),
+[data-testid="stLayoutWrapper"]:has(> .st-key-panel_cand),
+[data-testid="stLayoutWrapper"]:has(> .st-key-panel_q),
 [data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_ref),
 [data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_cand),
-[data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_q),
-.st-key-panel_ref, .st-key-panel_cand, .st-key-panel_q{
+[data-testid="stVerticalBlockBorderWrapper"]:has(> div > .st-key-panel_q){
   height:min(var(--panel-h, 720px), calc(100vh - 300px)) !important;
   max-height:min(var(--panel-h, 720px), calc(100vh - 300px)) !important;
 }
+.st-key-panel_ref > *, .st-key-panel_cand > *, .st-key-panel_q > *{ flex-shrink:0; }
 .cmp-head.gold{ background:var(--gold); color:var(--gold-text); border-bottom:1px solid var(--gold-border); }
 .cmp-head.q{ background:var(--gray-bg); color:var(--text-dim); border-bottom:1px solid var(--gray-border); }
 .cmp-head.sys{ background:var(--accent-bg); color:var(--accent-dark); border-bottom:1px solid var(--accent-bg-2); }

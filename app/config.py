@@ -35,7 +35,7 @@ HIGHLIGHT_DEFAULT = True
 # study they rate ALL candidate reports of that study, one after the other, so
 # the reference only has to be read once. The candidates of a study appear in
 # a rater-specific random order and the model behind each candidate is hidden.
-STUDIES_PER_RATER = 100
+STUDIES_PER_RATER = 110
 # Studies are handed out least-covered-first so that every study converges to
 # this many raters before any study gets a third one.
 TARGET_COVERAGE = 2
