@@ -40,8 +40,12 @@ reference report (left) · candidate report (right) · six questions below
    `app/config.py`); the state is stored with every rating (`highlights_on`), so
    assisted and unassisted ratings can be compared.
 
-Each rater is assigned a fixed set of **studies**; for every study they rate
-its candidate(s), with the model identity hidden. If a study has several
+Pools can hold several **modalities** (`MODALITIES` in `app/config.py`, one
+`modality` key per case). A rater is bound to one modality: new raters are
+routed to the first modality that still has fewer than `RATERS_PER_MODALITY`
+raters, so with two per modality the first two sign-ups rate CT and the next
+two X-ray. Each rater is assigned a fixed set of **studies**; for every study
+they rate its candidate(s), with the model identity hidden. If a study has several
 candidates they come back to back in a rater-specific shuffled order. Studies are handed out least-covered-first
 so every study reaches the target number of raters before any gets more.
 
@@ -120,6 +124,27 @@ so a rater halfway through keeps a balanced mix. Cases that already have ratings
 are never replaced. The switched studies are logged in the pool's `rebalanced`
 metadata.
 
+## Chest X-ray arm (ReXGradient)
+
+```bash
+python scripts/select_rexgradient_studies.py --n-studies 200 --normal-share 0.3 --seed 17
+/data2/moll/envs/chexagent/bin/python scripts/generate_cxr_candidates.py views     # frontal/lateral
+/data2/moll/envs/chexagent/bin/python scripts/generate_cxr_candidates.py chexagent
+/data2/moll/envs/cxrgen/bin/python    scripts/generate_cxr_candidates.py maira2
+/data2/moll/envs/llavarad/bin/python  scripts/generate_cxr_candidates.py llavarad
+python scripts/build_pool_rexgradient.py --candidates-per-study 1 --seed 17 --out data/cases_cxr.json
+python scripts/merge_pools.py ct=data/cases_ct.json cxr=data/cases_cxr.json --out data/cases.json
+```
+
+References are the ReXGradient-160K public-test reports (indication, comparison,
+findings, impression; Hugging Face, non-commercial agreement, must not be
+redistributed). Candidates: CXRMate-2's released outputs plus CheXagent-2,
+MAIRA-2 and LLaVA-Rad run locally on the test images with the authors' own
+prompts (`generate_cxr_candidates.py` documents inputs and environments; the
+models pin conflicting transformers versions, hence one env each). Two-view
+studies need the frontal image identified: CheXagent-2's view prompt is used,
+validated at 97.7% on the labelled test images.
+
 ## Precompute sentence links (optional)
 
 ```bash
@@ -182,6 +207,9 @@ scripts/
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
   precompute_links.py    sentence links between reference and candidate (radmetric)
   add_candidate.py       add a model to an existing pool, rebalanced, rated cases untouched
+  select_rexgradient_studies.py, generate_cxr_candidates.py, build_pool_rexgradient.py
+                         chest X-ray arm (ReXGradient references + 4 candidate systems)
+  merge_pools.py         merge per-modality pools into data/cases.json
 data/
   cases.example.json     example pool: 5 CT-RATE cases with precomputed links (schema reference)
 ```

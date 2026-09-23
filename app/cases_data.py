@@ -11,6 +11,7 @@ Case schema (one entry per reference/candidate pair):
     candidate_id  which model produced the candidate (hidden from raters)
     reference     {"clinical_information": str, "technique": str, "findings": str, "impression": str}
     candidate     {"text": str}
+    modality      key into config.MODALITIES (e.g. "ct", "cxr"); optional, defaults to the first
     meta          free-form, optional (e.g. abnormality labels)
     links         optional, from scripts/precompute_links.py: sentence pairs describing the same
                   finding, as character offsets within a section of each side
@@ -19,7 +20,7 @@ from __future__ import annotations
 
 import json
 
-from config import CASES_PATH, EXAMPLE_CASES_PATH
+from config import CASES_PATH, EXAMPLE_CASES_PATH, MODALITIES
 
 
 def _load(path):
@@ -38,6 +39,10 @@ elif EXAMPLE_CASES_PATH.exists():
 else:
     POOL_META, CASES, USING_EXAMPLE = {}, [], True
 
+_DEFAULT_MODALITY = next(iter(MODALITIES))
+for _c in CASES:
+    _c.setdefault("modality", _DEFAULT_MODALITY)
 CASES_BY_ID = {c["id"]: c for c in CASES}
+MODALITIES_PRESENT = [m for m in MODALITIES if any(c["modality"] == m for c in CASES)]
 STUDY_IDS = sorted({c["study_id"] for c in CASES})
 CANDIDATE_IDS = sorted({c["candidate_id"] for c in CASES})

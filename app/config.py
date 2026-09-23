@@ -7,7 +7,12 @@ from pathlib import Path
 
 APP_TITLE = "Radiology Report Annotation"
 APP_SUBTITLE = "Reader study · reference vs. model-generated reports"
-MODALITY_LABEL = "Chest CT"  # shown in the UI header; purely cosmetic
+# Modalities in the pool. Every case carries a "modality" key (missing -> the first one here). A rater
+# is bound to ONE modality: new raters are routed to the first modality in this order that still has
+# fewer than RATERS_PER_MODALITY raters, then get STUDIES_PER_RATER of its studies, least-covered-first.
+MODALITIES = {"ct": "Chest CT", "cxr": "Chest X-ray"}
+RATERS_PER_MODALITY = 2
+MODALITY_LABEL = next(iter(MODALITIES.values()))  # fallback label (login screen, example pool)
 
 # ---- data locations --------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,7 +40,7 @@ HIGHLIGHT_DEFAULT = True
 # study they rate ALL candidate reports of that study, one after the other, so
 # the reference only has to be read once. The candidates of a study appear in
 # a rater-specific random order and the model behind each candidate is hidden.
-STUDIES_PER_RATER = 110
+STUDIES_PER_RATER = 120
 # Studies are handed out least-covered-first so that every study converges to
 # this many raters before any study gets a third one.
 TARGET_COVERAGE = 2

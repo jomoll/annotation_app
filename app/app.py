@@ -22,9 +22,9 @@ import assignment
 import auth
 import progress
 import storage
-from cases_data import CASES, CASES_BY_ID, CANDIDATE_IDS, POOL_META, STUDY_IDS, USING_EXAMPLE
-from config import (APP_SUBTITLE, APP_TITLE, HIGHLIGHT_DEFAULT, MODALITY_LABEL, PANEL_HEIGHT_PX, POSITIONS,
-                    QUESTIONS_BESIDE_REPORTS, STUDIES_PER_RATER)
+from cases_data import CASES, CASES_BY_ID, CANDIDATE_IDS, MODALITIES_PRESENT, POOL_META, STUDY_IDS, USING_EXAMPLE
+from config import (APP_SUBTITLE, APP_TITLE, HIGHLIGHT_DEFAULT, MODALITIES, MODALITY_LABEL, PANEL_HEIGHT_PX,
+                    POSITIONS, QUESTIONS_BESIDE_REPORTS, STUDIES_PER_RATER)
 from questions import QUESTIONS, REQUIRED_KEYS, likert_values
 from theme import THEME_CSS, badge
 
@@ -40,7 +40,7 @@ def _brand():
     st.markdown(
         '<div class="brand-row"><div class="brand-logo">RR</div><div>'
         f'<p class="brand-title">{_esc(APP_TITLE)}</p>'
-        f'<div class="brand-sub">{_esc(APP_SUBTITLE)} · {_esc(MODALITY_LABEL)}</div>'
+        f'<div class="brand-sub">{_esc(APP_SUBTITLE)} · {_esc(" / ".join(MODALITIES[m] for m in MODALITIES_PRESENT) or MODALITY_LABEL)}</div>'
         "</div></div>",
         unsafe_allow_html=True,
     )
@@ -98,18 +98,28 @@ def auth_screen():
 # ============================================================
 # Overview page — a short explanation, not a slide deck
 # ============================================================
-def overview_page():
-    n_cands = len(CANDIDATE_IDS)
+def _rater_modality_label(rater_slug: str) -> tuple[str, str]:
+    """(modality key, label) this rater is or will be assigned to."""
+    key = assignment.rater_modality(rater_slug, CASES) if CASES else None
+    if key is None and CASES:
+        key = assignment._pick_modality(CASES, assignment.load())
+    return key or "", MODALITIES.get(key or "", MODALITY_LABEL)
+
+
+def overview_page(rater_slug: str):
+    mod_key, mod_label = _rater_modality_label(rater_slug)
+    mod_cases = [c for c in CASES if c["modality"] == mod_key] if mod_key else CASES
+    n_cands = len({c["candidate_id"] for c in mod_cases}) or len(CANDIDATE_IDS)
     with st.container(border=True):
         st.subheader("What this is")
         st.markdown(
-            f"Automatically generated **{MODALITY_LABEL}** reports, compared against the original report "
+            f"Automatically generated **{mod_label}** reports, compared against the original report "
             "written by the radiologist. Every case shows the **reference (original) report on the left** and "
             "one **candidate report on the right**. You answer six short questions about the candidate, "
             "always judging it *relative to the reference* — the reference is the ground truth here, even if "
             "you would have worded it differently yourself."
         )
-        per_study = max(Counter(c["study_id"] for c in CASES).values()) if CASES else 1
+        per_study = max(Counter(c["study_id"] for c in mod_cases).values()) if mod_cases else 1
         if per_study > 1:
             layout = (f"- You are assigned **{STUDIES_PER_RATER} studies**. For each study you rate all its "
                       f"{per_study} candidates back to back, so the reference only has to be read once.\n")
@@ -400,7 +410,8 @@ def cases_page(rater_slug: str):
                         unsafe_allow_html=True)
 
     _nav_row("top")
-    where = f"Study {study_no} of {n_studies}" + (f" · candidate {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else "")
+    where = f"{MODALITIES.get(case['modality'], '')} · study {study_no} of {n_studies}" + (
+        f" · candidate {pos_in_study} of {n_in_study} for this study" if n_in_study > 1 else "")
     guidance = f"{where} · judge the candidate relative to the reference."
 
     existing = ratings.get(case["id"], {})
@@ -499,9 +510,15 @@ def admin_ratings_page():
                            file_name="ratings_history.csv", mime="text/csv")
 
     if CASES:
+        st.markdown("**Raters per modality**")
+        rbm = assignment.raters_by_modality(CASES)
+        st.dataframe(pd.DataFrame([{"modality": MODALITIES.get(m, m), "raters": len(v), "who": ", ".join(v),
+                                    "studies": len({c["study_id"] for c in CASES if c["modality"] == m})}
+                                   for m, v in rbm.items() if m in MODALITIES_PRESENT]), width="stretch", hide_index=True)
         st.markdown("**Study coverage** (raters assigned per study)")
         cov = assignment.coverage_table(CASES)
-        cov_df = pd.DataFrame({"study_id": list(cov), "raters_assigned": list(cov.values())})
+        mod_of = {c["study_id"]: c["modality"] for c in CASES}
+        cov_df = pd.DataFrame({"study_id": list(cov), "modality": [mod_of[s] for s in cov], "raters_assigned": list(cov.values())})
         st.caption(f"{len(cov_df)} studies · {len(CASES)} cases · candidates: {', '.join(CANDIDATE_IDS)}")
         st.dataframe(cov_df.sort_values(["raters_assigned", "study_id"]), width="stretch", hide_index=True)
     if POOL_META:
@@ -561,7 +578,7 @@ def main():
     st.divider()
 
     if st.session_state["page"] == "overview":
-        overview_page()
+        overview_page(slug)
     elif st.session_state["page"] == "cases":
         cases_page(slug)
     elif st.session_state["page"] == "admin_ratings" and is_admin:

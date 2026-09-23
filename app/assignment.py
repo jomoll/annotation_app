@@ -1,6 +1,8 @@
 """Per-rater case assignment.
 
-The unit of assignment is a *study* (one reference report). A rater who is
+A rater is bound to one modality: on their first Cases-page visit they are routed to the first
+modality (config.MODALITIES order) that still has fewer than RATERS_PER_MODALITY real raters. Within
+that modality the unit of assignment is a *study* (one reference report). A rater who is
 assigned a study rates every candidate report of that study, back to back, in
 a rater-specific shuffled order — the reference is read once, the candidates
 are compared against it one after another, and the model behind each
@@ -21,7 +23,7 @@ import random
 from collections import Counter, defaultdict
 
 import auth
-from config import DATA_DIR, NON_RATER_EMAILS, STUDIES_PER_RATER
+from config import DATA_DIR, MODALITIES, NON_RATER_EMAILS, RATERS_PER_MODALITY, STUDIES_PER_RATER
 
 ASSIGN_PATH = DATA_DIR / "assignments.json"
 NON_RATER_SLUGS = {auth.user_slug(e) for e in NON_RATER_EMAILS} | {auth.user_slug(auth.DEFAULT_ADMIN_USER)}
@@ -50,11 +52,46 @@ def _by_study(cases: list[dict]) -> dict[str, list[dict]]:
     return groups
 
 
+def _modality_of_study(cases: list[dict]) -> dict[str, str]:
+    return {c["study_id"]: c.get("modality", next(iter(MODALITIES))) for c in cases}
+
+
+def _real_raters(data: dict) -> dict[str, list[str]]:
+    return {slug: ids for slug, ids in data.items() if slug not in NON_RATER_SLUGS and not slug.startswith("_")}
+
+
+def rater_modality(rater_slug: str, cases: list[dict], data: dict | None = None) -> str | None:
+    """The modality this rater is bound to (from an existing assignment), or None if new."""
+    data = load() if data is None else data
+    mod_of = _modality_of_study(cases)
+    ids = [s for s in data.get(rater_slug, []) if s in mod_of]
+    if not ids:
+        return None
+    return Counter(mod_of[s] for s in ids).most_common(1)[0][0]
+
+
+def _pick_modality(cases: list[dict], data: dict) -> str:
+    """First modality (config order) that is present in the pool and still has fewer than
+    RATERS_PER_MODALITY real raters; if all are full, the one with the fewest raters."""
+    mod_of = _modality_of_study(cases)
+    present = [m for m in MODALITIES if m in set(mod_of.values())]
+    raters_per: Counter = Counter()
+    for slug, ids in _real_raters(data).items():
+        m = rater_modality(slug, cases, data)
+        if m:
+            raters_per[m] += 1
+    for m in present:
+        if raters_per[m] < RATERS_PER_MODALITY:
+            return m
+    return min(present, key=lambda m: raters_per[m])
+
+
 def studies_for(rater_slug: str, cases: list[dict]) -> list[str]:
-    """This rater's assigned study ids, extending a prior assignment if it is short."""
+    """This rater's assigned study ids (one modality), extending a prior assignment if it is short."""
     data = load()
-    groups = _by_study(cases)
-    available = set(groups)
+    mod_of = _modality_of_study(cases)
+    modality = rater_modality(rater_slug, cases, data) or _pick_modality(cases, data)
+    available = {s for s, m in mod_of.items() if m == modality}
 
     existing = [s for s in data.get(rater_slug, []) if s in available]
     target = min(STUDIES_PER_RATER, len(available))
@@ -62,10 +99,9 @@ def studies_for(rater_slug: str, cases: list[dict]) -> list[str]:
         return existing
 
     coverage: Counter = Counter()
-    for slug, ids in data.items():
-        if slug == rater_slug or slug in NON_RATER_SLUGS or slug.startswith("_"):
-            continue
-        coverage.update(s for s in ids if s in available)
+    for slug, ids in _real_raters(data).items():
+        if slug != rater_slug:
+            coverage.update(s for s in ids if s in available)
 
     have = set(existing)
     pool = sorted((s for s in available if s not in have), key=lambda s: (coverage.get(s, 0), s))
@@ -91,10 +127,17 @@ def cases_for(rater_slug: str, cases: list[dict]) -> list[dict]:
 
 def coverage_table(cases: list[dict]) -> dict[str, int]:
     """{study_id: number of real raters assigned} — for the admin page."""
-    data = load()
     cov: Counter = Counter()
-    for slug, ids in data.items():
-        if slug in NON_RATER_SLUGS or slug.startswith("_"):
-            continue
+    for ids in _real_raters(load()).values():
         cov.update(ids)
     return {s: cov.get(s, 0) for s in _by_study(cases)}
+
+
+def raters_by_modality(cases: list[dict]) -> dict[str, list[str]]:
+    data = load()
+    out: dict[str, list[str]] = {m: [] for m in MODALITIES}
+    for slug in _real_raters(data):
+        m = rater_modality(slug, cases, data)
+        if m:
+            out.setdefault(m, []).append(slug)
+    return out
