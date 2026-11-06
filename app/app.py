@@ -12,6 +12,7 @@ Run (bind to localhost and reach it through an SSH tunnel if the data is sensiti
 from __future__ import annotations
 
 import html
+import json
 from collections import Counter
 
 import pandas as pd
@@ -65,7 +66,7 @@ def auth_screen():
 
     with tab_login:
         with st.form("login_form"):
-            email = st.text_input("Email (or `admin` for the host account)")
+            email = st.text_input("Email")
             password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("Log in", type="primary")
         if submitted:
@@ -211,37 +212,53 @@ def _report_text(text: str, spans: list[tuple[int, int, list[int]]] | None):
     st.markdown(f'<div class="report-text">{body}</div>', unsafe_allow_html=True)
 
 
-_LINK_JS = """<script>
+# The hover handler runs in the PAGE's own realm, not in the component iframe: Streamlit unmounts and
+# remounts that iframe on some reruns (leaving and re-entering a tab, toggling, elements re-ordering),
+# which tears down its JS realm. A listener registered on the page but *defined* inside the iframe stops
+# firing the moment the iframe goes away, and a one-shot "already bound" guard then prevented the new
+# iframe from ever re-attaching it — highlighting died until a full page reload. Injecting the handler
+# as a <script> into the page keeps its closure alive across iframe churn, and every injection replaces
+# the previous handler, so re-running it is always safe.
+_LINK_HANDLER_JS = """
 (function(){
-  const P = window.parent; const D = P.document;
-  if (P.__lnkBound) return; P.__lnkBound = true;
+  if (window.__lnkOver) {
+    document.removeEventListener('mouseover', window.__lnkOver);
+    document.removeEventListener('mouseout', window.__lnkOut);
+  }
   const ids = el => (el.dataset.l || '').split(',');
-  function clear(){ D.querySelectorAll('.lnk.hl').forEach(x => x.classList.remove('hl')); }
-  D.addEventListener('mouseover', e => {
+  function clear(){ document.querySelectorAll('.lnk.hl').forEach(x => x.classList.remove('hl')); }
+  window.__lnkOver = function(e){
     const t = e.target.closest ? e.target.closest('.lnk') : null;
     clear(); if (!t) return;
     const mine = ids(t); const box = t.closest('[data-testid="stVerticalBlockBorderWrapper"]');
     let first = null;
-    D.querySelectorAll('.lnk').forEach(x => {
+    document.querySelectorAll('.lnk').forEach(x => {
       if (ids(x).some(i => mine.includes(i))) {
         x.classList.add('hl');
         if (!first && x !== t && x.closest('[data-testid="stVerticalBlockBorderWrapper"]') !== box) first = x;
       }
     });
     if (first) first.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-  });
-  D.addEventListener('mouseout', e => {
+  };
+  window.__lnkOut = function(e){
     const t = e.target.closest ? e.target.closest('.lnk') : null;
     const to = e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget.closest('.lnk') : null;
     if (t && !to) clear();
-  });
+  };
+  document.addEventListener('mouseover', window.__lnkOver);
+  document.addEventListener('mouseout', window.__lnkOut);
 })();
-</script>"""
+"""
+
+# Bootstrap that runs inside the component iframe and copies the handler into the page.
+_LINK_JS = ("<script>(function(){var D = window.parent.document;"
+            "var s = D.createElement('script'); s.textContent = " + json.dumps(_LINK_HANDLER_JS) + ";"
+            "D.head.appendChild(s); s.remove();})();</script>")
 
 
 def _inject_link_js():
-    # Real JS only runs inside components.html's iframe; same-origin, so it can reach the
-    # parent page and attach one delegated hover listener there (guarded against reruns).
+    # Real JS only runs inside components.html's iframe; same-origin, so it can reach the page and
+    # install the delegated hover handler there (see _LINK_HANDLER_JS for why it must live there).
     components.html(_LINK_JS, height=0)
 
 
@@ -264,6 +281,11 @@ def _render_reference(ref: dict, header: bool = True, spans: dict | None = None)
     if ref.get("impression"):
         st.markdown('<div class="report-label">Impression</div>', unsafe_allow_html=True)
         _report_text(ref["impression"], spans.get("impression"))
+    if not ref.get("findings") and not ref.get("impression") and (ref.get("text") or "").strip():
+        # An unsectioned reference (typical of pathology) arrives as one `text` block, exactly like an
+        # unsectioned candidate. Without this the reference panel rendered empty.
+        st.markdown('<div class="report-label">Report</div>', unsafe_allow_html=True)
+        _report_text(ref["text"], spans.get("text"))
 
 
 def _candidate_title(pos_in_study: int, n_in_study: int) -> str:
@@ -316,14 +338,32 @@ def _render_question(i: int, q: dict, case_id: str, existing: dict):
         st.radio(q["title"], opts, index=default, horizontal=True, key=key, label_visibility="collapsed")
 
 
-def cases_page(rater_slug: str):
+def cases_page(rater_slug: str, preview_modality: str | None = None, modality: str | None = None):
+    """The rating screen.
+
+    `modality` picks which arm a rater works in, for raters who hold more than one.
+    `preview_modality` is the admin's read-only look at one arm: it shows an existing rater's case
+    list for that modality instead of assigning the viewer any studies.
+    """
     if not CASES:
         st.info("No cases loaded — build data/cases.json first (see README).")
         return
-    my_cases = assignment.cases_for(rater_slug, CASES)
+    if preview_modality:
+        owner, my_cases = assignment.preview_cases(preview_modality, CASES)
+        if not my_cases:
+            st.info(f"No {MODALITIES.get(preview_modality, preview_modality)} cases in the pool.")
+            return
+        who = f"rater `{owner}`" if owner else "nobody yet — showing the pool in order"
+        st.info(f"**Admin preview · {MODALITIES.get(preview_modality, preview_modality)}** — "
+                f"the assignment of {who}. You are not counted as a rater and no studies are "
+                f"assigned to you; anything you save here is stored under your own account.")
+    else:
+        my_cases = assignment.cases_for(rater_slug, CASES, modality)
     if not my_cases:
         st.info("No cases could be assigned to you. Please contact the study lead.")
         return
+    # One cursor per tab, so a rater working two arms (and the admin previews) do not share one.
+    idx_key = f"case_idx::{preview_modality or modality}" if (preview_modality or modality) else "case_idx"
     case_ids = [c["id"] for c in my_cases]
     ratings = storage.load_ratings(rater_slug)
 
@@ -346,19 +386,21 @@ def cases_page(rater_slug: str):
         if any(v.strip() for k, v in rating.items() if k != "highlights_on"):
             storage.save_rating(rater_slug, CASES_BY_ID[cid], rating)
 
-    if "case_idx" not in st.session_state:
+    if idx_key not in st.session_state:
         # resume where the rater left off; if that case no longer exists (pool was rebalanced),
         # continue at the first case without a complete rating instead of jumping back to the start
         last = progress.load().get(rater_slug)
-        if last in case_ids:
-            st.session_state["case_idx"] = case_ids.index(last)
+        if last in case_ids and not preview_modality:
+            st.session_state[idx_key] = case_ids.index(last)
         else:
-            st.session_state["case_idx"] = next((i for i, cid in enumerate(case_ids)
-                                                 if not _is_complete(ratings.get(cid, {}))), 0)
-    idx = max(0, min(st.session_state["case_idx"], len(my_cases) - 1))
-    st.session_state["case_idx"] = idx
+            st.session_state[idx_key] = next((i for i, cid in enumerate(case_ids)
+                                              if not _is_complete(ratings.get(cid, {}))), 0)
+    idx = max(0, min(st.session_state[idx_key], len(my_cases) - 1))
+    st.session_state[idx_key] = idx
     case = my_cases[idx]
-    progress.set_last_case(rater_slug, case["id"])
+    if not preview_modality:
+        # the preview must not move the admin's own resume point between arms
+        progress.set_last_case(rater_slug, case["id"])
 
     # position of this candidate within its study, for the header
     siblings = [c["id"] for c in my_cases if c["study_id"] == case["study_id"]]
@@ -369,7 +411,7 @@ def cases_page(rater_slug: str):
 
     def _go(new_idx: int):
         _autosave_if_needed(case["id"])
-        st.session_state["case_idx"] = new_idx
+        st.session_state[idx_key] = new_idx
         st.rerun()
 
     n_done = sum(1 for cid in case_ids if _is_complete(ratings.get(cid, {})))
@@ -389,7 +431,7 @@ def cases_page(rater_slug: str):
         chosen = st.session_state.get(key)
         if chosen in labels:
             _autosave_if_needed(current_id)
-            st.session_state["case_idx"] = labels.index(chosen)
+            st.session_state[idx_key] = labels.index(chosen)
 
     def _nav_row(pos: str):
         # one compact row: previous · case selector · next · progress — same row top and bottom
@@ -551,8 +593,23 @@ def main():
     slug = auth.user_slug(email)
     is_admin = role == "admin"
 
+    # Cases tabs are named by modality. An admin gets one per modality in the pool, each a
+    # read-only look at an existing rater's assignment (assignment.preview_cases), so every arm can
+    # be checked from one account without that account being assigned studies or counted as a
+    # rater. A rater gets one tab per arm they hold -- normally one, but a rater who finished an arm
+    # and was granted a second (assignment.grant_modality) gets both, and the tabs keep the two
+    # assignments apart so neither can disturb the other.
     page_labels = {"overview": "Overview", "cases": "Cases", "admin_ratings": "Admin: Ratings"}
-    nav_options = ["Overview", "Cases"] + (["Admin: Ratings"] if is_admin else [])
+    if is_admin:
+        tab_mods = [m for m in MODALITIES if m in MODALITIES_PRESENT]
+    else:
+        tab_mods = [m for m in assignment.rater_modalities(slug, CASES) if m in MODALITIES_PRESENT] if CASES else []
+    if tab_mods:
+        page_labels.pop("cases")
+        for m in tab_mods:
+            page_labels[f"cases:{m}"] = f"Cases · {MODALITIES[m]}"
+    nav_options = ["Overview"] + [page_labels[k] for k in page_labels
+                                  if k.startswith("cases")] + (["Admin: Ratings"] if is_admin else [])
     if "page" not in st.session_state:
         st.session_state["page"] = "overview"
     current_label = page_labels.get(st.session_state["page"], "Overview")
@@ -581,6 +638,14 @@ def main():
         overview_page(slug)
     elif st.session_state["page"] == "cases":
         cases_page(slug)
+    elif st.session_state["page"].startswith("cases:"):
+        mod = st.session_state["page"].split(":", 1)[1]
+        # same tab for both roles, but an admin is previewing someone else's list while a rater is
+        # working their own, so only the rater branch may create or extend an assignment
+        if is_admin:
+            cases_page(slug, preview_modality=mod)
+        else:
+            cases_page(slug, modality=mod)
     elif st.session_state["page"] == "admin_ratings" and is_admin:
         admin_ratings_page()
     else:

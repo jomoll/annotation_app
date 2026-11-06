@@ -10,7 +10,7 @@ APP_SUBTITLE = "Reader study · reference vs. model-generated reports"
 # Modalities in the pool. Every case carries a "modality" key (missing -> the first one here). A rater
 # is bound to ONE modality: new raters are routed to the first modality in this order that still has
 # fewer than RATERS_PER_MODALITY raters, then get STUDIES_PER_RATER of its studies, least-covered-first.
-MODALITIES = {"ct": "Chest CT", "cxr": "Chest X-ray"}
+MODALITIES = {"ct": "Chest CT", "cxr": "Chest X-ray", "mri": "Brain MRI"}
 RATERS_PER_MODALITY = 2
 MODALITY_LABEL = next(iter(MODALITIES.values()))  # fallback label (login screen, example pool)
 
@@ -44,6 +44,13 @@ STUDIES_PER_RATER = 120
 # Studies are handed out least-covered-first so that every study converges to
 # this many raters before any study gets a third one.
 TARGET_COVERAGE = 2
+# Order a NEW rater's list so the studies another rater has already been assigned (the overlap used for
+# inter-rater agreement) come first, instead of last. Without this the overlap lands at the end of the
+# list by construction — least-covered-first picks the uncovered studies first — and agreement numbers
+# only become available once the second rater is nearly finished. Existing assignments are never
+# reordered: a rater's list order is fixed on first assignment, because reordering mid-study moves the
+# case a rater is resuming from (their open session tracks a position, not a case).
+OVERLAP_FIRST = True
 # Logins used for testing / administration. Their assignments do not count
 # toward a study's coverage, so they never crowd out real raters.
 NON_RATER_EMAILS = {e.strip().lower() for e in os.environ.get("ANNOTATION_TEST_EMAILS", "").split(",") if e.strip()}

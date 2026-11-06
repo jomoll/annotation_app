@@ -1,0 +1,86 @@
+{
+  "_comment": "DRAFT, NOT CLINICALLY REVIEWED. A starting point for abdominal ultrasound. Have a sonographer or radiologist review and adapt every list to your exam types and house style before use. See README.md in this folder.",
+  "modality_impossible": {
+    "us": [
+      "The lesion measures 45 Hounsfield units.",
+      "The lesion is T2 hyperintense with low T1 signal.",
+      "There is restricted diffusion on DWI sequences.",
+      "The mass demonstrates avid enhancement after gadolinium administration.",
+      "Bone window images demonstrate no cortical erosion.",
+      "Coronal reformats confirm the extent of the abnormality."
+    ]
+  },
+  "out_of_field": {
+    "abdomen_us": [
+      "The cerebral hemispheres show no acute infarct.",
+      "The thyroid gland is normal in size and echotexture.",
+      "The aortic valve leaflets are thin and mobile.",
+      "The visualized cervical spinal cord is normal in calibre."
+    ]
+  },
+  "comparison": {
+    "abdomen_us": [
+      "Compared to the prior examination, the hepatic lesion has enlarged from 12 mm to 21 mm.",
+      "The previously described gallbladder sludge has resolved in the interval.",
+      "New ascites has developed since the prior study.",
+      "Interval increase in the size of the renal cyst is noted.",
+      "The previously noted hydronephrosis has improved since the earlier examination."
+    ]
+  },
+  "benign_inserts": {
+    "abdomen_us": [
+      "No free fluid is identified.",
+      "The spleen is normal in size.",
+      "The abdominal aorta is of normal calibre where visualised.",
+      "The urinary bladder is unremarkable."
+    ]
+  },
+  "location_confusions": [
+    {
+      "terms": [
+        "upper pole",
+        "lower pole",
+        "interpolar region"
+      ],
+      "acquisitions": [
+        "abdomen_us"
+      ]
+    },
+    {
+      "terms": [
+        "portal vein",
+        "hepatic vein"
+      ],
+      "acquisitions": [
+        "abdomen_us"
+      ]
+    },
+    {
+      "terms": [
+        "common bile duct",
+        "common hepatic duct"
+      ],
+      "acquisitions": [
+        "abdomen_us"
+      ]
+    },
+    {
+      "terms": [
+        "caudate lobe",
+        "left lobe",
+        "right lobe"
+      ],
+      "acquisitions": [
+        "abdomen_us"
+      ]
+    }
+  ],
+  "morphology_swap": {
+    "_comment": "Echogenicity is ultrasound's density/signal; the built-in list covers CT and MR terms only.",
+    "hypoechoic": "hyperechoic",
+    "hyperechoic": "hypoechoic",
+    "anechoic": "echogenic",
+    "echogenic": "anechoic",
+    "isoechoic": "hypoechoic"
+  }
+}

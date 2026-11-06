@@ -21,14 +21,19 @@ QUESTIONS = [
     {
         "key": "completeness",
         "title": "Completeness",
-        "prompt": "Is all necessary information that the patient would need, given the clinical question, present in the candidate?",
+        "prompt": "How much of what the reference report states does the candidate reproduce?",
+        "note": ("Coverage only. Take the findings the reference actually reports and judge what share of them the "
+                 "candidate conveys; different wording still counts as reproduced. Whether a missing finding matters "
+                 "clinically belongs to Clinical safety and Overall score, and anything the candidate adds that is "
+                 "not in the reference belongs to Correctness. If the reference reports no abnormal finding, a "
+                 "candidate that also reports none is complete."),
         "type": "likert",
         "scale": {
-            1: ("None", "Captures no important information."),
-            2: ("~25%", "Captures about 25% of the important information."),
-            3: ("~50%", "Captures about 50% of the important information."),
-            4: ("~75%", "Captures about 75% of the important information."),
-            5: ("All", "Captures all of the important information."),
+            1: ("None", "Reproduces none of the findings stated in the reference."),
+            2: ("~25%", "Reproduces about a quarter of the findings stated in the reference."),
+            3: ("~50%", "Reproduces about half of the findings stated in the reference."),
+            4: ("~75%", "Reproduces about three quarters of the findings stated in the reference."),
+            5: ("All", "Reproduces every finding stated in the reference."),
         },
     },
     {
