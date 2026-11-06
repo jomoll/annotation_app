@@ -20,7 +20,7 @@ reference report (left) · candidate report (right) · six questions below
 
    | # | Question | Scale |
    |---|---|---|
-   | 1 | Completeness — is all necessary information for the clinical question present? | 1–5 |
+   | 1 | Completeness — what share of the reference's findings does the candidate reproduce? | 1–5 |
    | 2 | Correctness — how medically accurate is it, regardless of completeness? | 1–5 |
    | 3 | Same diagnosis — does it conclude the same main diagnosis as the reference? | yes / no |
    | 4 | Clinical safety — does any statement lead to a serious safety risk? | yes / no |
@@ -43,9 +43,16 @@ reference report (left) · candidate report (right) · six questions below
 Pools can hold several **modalities** (`MODALITIES` in `app/config.py`, one
 `modality` key per case). A rater is bound to one modality: new raters are
 routed to the first modality that still has fewer than `RATERS_PER_MODALITY`
-raters, so with two per modality the first two sign-ups rate CT and the next
-two X-ray. Each rater is assigned a fixed set of **studies**; for every study
-they rate its candidate(s), with the model identity hidden. If a study has several
+raters, so with two per modality the first two sign-ups rate CT, the next two
+X-ray and the next two brain MRI. Each rater is assigned a fixed set of **studies**; for every study
+they rate its candidate(s), with the model identity hidden. Studies are picked
+least-covered-first, and within a coverage level round-robin over the candidate
+systems, so the shared block is balanced across models. A new rater's list
+*starts* with the studies another rater already has (`OVERLAP_FIRST` in
+`app/config.py`), so inter-rater agreement can be computed early instead of only
+once the second rater is nearly finished. A list is ordered once, at first
+assignment, and never reordered afterwards: a rater's open session tracks a
+position, not a case, so reordering mid-study silently moves them elsewhere. If a study has several
 candidates they come back to back in a rater-specific shuffled order. Studies are handed out least-covered-first
 so every study reaches the target number of raters before any gets more.
 
@@ -60,7 +67,8 @@ streamlit run app/app.py --server.address 127.0.0.1 --server.port 8750
 ```
 
 Without a case pool the app runs on the bundled `data/cases.example.json`
-(one CT-RATE study with its four candidates; a banner says so).
+(two invented chest-CT studies, one with three candidates and hover links; no
+patient data; a banner says so).
 
 On first start the app seeds a host account **`admin` / `admin`** (role admin).
 Change that password before anyone else can reach the app:
@@ -148,29 +156,100 @@ validated at 97.7% on the labelled test images.
 ## Precompute sentence links (optional)
 
 ```bash
-export RADMETRIC_LLM_URL=http://localhost:8000/v1 RADMETRIC_LLM_MODEL=gemma-4-31b
-PYTHONPATH=/path/to/radmetric/src python scripts/precompute_links.py data/cases.json
+pip install -r requirements-tools.txt
+export ANNOTATION_LLM_URL=http://localhost:8000/v1 ANNOTATION_LLM_MODEL=<served model>
+python scripts/precompute_links.py data/cases.json
 ```
 
-Uses [radmetric](https://github.com/jomoll/radmetric): an LLM extracts clinical
+Uses the claim extraction and matching in `reporttools/` (vendored from
+[radmetric](https://github.com/jomoll/radmetric), no install needed): an LLM extracts clinical
 claims from every sentence of both reports, claims are paired one-to-one across
 the reports, and each pair becomes a link between the two sentences. Only
 matches are stored (character offsets per section), never error categories, so
 the app shows correspondence without leaking the metric's verdicts. Links below a
 matcher score of 0.85 and normality claims about different anatomy are dropped as
-navigation noise. `--no-think` is needed for reasoning models such as Qwen 3.x.
+navigation noise. `--no-think` is needed for reasoning models such as Qwen 3.x;
+if your server ignores it, raise `ANNOTATION_LLM_MAX_TOKENS` (e.g. 4096) instead.
+Report text is sent to the endpoint: use one you are permitted to send it to.
 Which model produced the links is recorded in the pool's `links_meta`.
+
+## A new modality, any dataset
+
+The full protocol — choosing the dataset and split, capping the normal share,
+checking the quality spread before booking clinicians, reader allocation — is in
+[`docs/new_modality_guide.pdf`](docs/new_modality_guide.pdf). The tools it uses
+are dataset-independent and need nothing beyond `requirements-tools.txt`:
+
+```bash
+pip install -r requirements-tools.txt
+
+# 1. one candidate system per study, normal/abnormal mix equal per system
+python scripts/assign_systems.py --references refs.csv --studies eval_ids.txt \
+    --systems modelA modelB injected retrieved --out data/raw/us/assignment.csv
+
+# 2. run your models on their assigned studies; write one JSON line per study:
+#    {"study_id": ..., "text": ...}  or  {"study_id": ..., "findings": ..., "impression": ...}
+#    (scripts/normalize_candidate_format.py strips Markdown, so no system is identifiable by layout)
+
+# 3. optional text-derived strata, ONLY to fill a quality band the models leave empty
+python scripts/generate_fallbacks.py coverage --modality us --acquisition abdomen_us \
+    --lexicon my_us_lexicon.json
+python scripts/generate_fallbacks.py inject --reports refs.csv --studies eval_ids.txt \
+    --modality us --acquisition abdomen_us --lexicon my_us_lexicon.json \
+    --out data/raw/us/candidates/injected.jsonl
+python scripts/generate_fallbacks.py retrieve --reports refs.csv --studies eval_ids.txt \
+    --donor-reports train_refs.csv --match-col exam_type \
+    --out data/raw/us/candidates/retrieved.jsonl
+
+# 4. pool -> merge -> register the modality in app/config.py MODALITIES
+python scripts/build_pool.py --modality us --references refs.csv \
+    --candidates modelA=a.jsonl modelB=b.jsonl injected=data/raw/us/candidates/injected.jsonl \
+                 retrieved=data/raw/us/candidates/retrieved.jsonl \
+    --assignment data/raw/us/assignment.csv --out data/cases_us.json
+python scripts/merge_pools.py us=data/cases_us.json --out data/cases.json
+python scripts/precompute_links.py data/cases.json     # optional hover links
+```
+
+**References** are a CSV or JSONL with a study id, the report as `findings`
+(+ `impression`) or as a single `report` column (pathology reports usually are;
+the app then shows them as one block), and optionally `indication` /
+`clinical_information`, `technique` / `specimen` and `normal` (0/1). See
+`reporttools/reports.py`.
+
+**Error injection** writes the reference with 1-3 labelled errors — laterality,
+severity, size, morphology, location, negation, omission, plus out-of-field,
+comparison and modality-impossible statements — and records each one (category,
+span, before/after) in `injected_errors`. That record is ground truth for
+validating a metric; `build_pool.py` keeps it, and retrieval's donor ids, out of
+the pool raters' browsers receive. Lexicons are built in for CT, chest X-ray, brain
+and spine MR and surgical pathology; any other modality adds its own in a JSON file
+([`reporttools/lexicons/`](reporttools/lexicons/README.md), with an unreviewed
+abdominal-ultrasound draft to start from). Without one, the categories that need a
+lexicon are switched off rather than borrowing another modality's list. Omission
+needs an LLM for claim extraction (`ANNOTATION_LLM_URL` / `_MODEL` / `_KEY`);
+`--no-llm` runs everything else offline.
+
+**Similar-case retrieval** gives each study another patient's real report: same
+clinical context, different findings (`--match-col` pins the exam type or
+specimen organ; `--labels` with `--label-mode similar|divergent` steers by
+diagnosis). Donors must come from outside the evaluation set, ideally the
+training split.
+
+Both strata come from reference **text**, not images, and every record says so
+(`strategy`, `derived_from_reference`). Analyse them as their own stratum, never
+as model output.
 
 ## Adapting it to your own data
 
-* **Cases** — write a `data/cases.json` in the schema shown in
-  `data/cases.example.json` (see the docstring in `app/cases_data.py`), or copy
-  `scripts/build_pool_ctrate.py` and change the loaders. A candidate can be a
-  single `text` or split into `findings` / `impression`. `links` are optional.
+* **Cases** — build them with `scripts/build_pool.py` (see above), or write a
+  `data/cases.json` in the schema shown in `data/cases.example.json` (see the
+  docstring in `app/cases_data.py`). A reference or candidate can be a single
+  `text` or split into `findings` / `impression`. `links` are optional.
 * **Questions** — edit `app/questions.py`. Each question is a dict (key, prompt,
   type `likert` or `binary`, per-score anchors; the anchor keys define the scale,
   so 1–3 and 1–5 mix freely). Stored values are the score or option label, so
   rewording anchors never invalidates saved ratings.
+* **Modalities** — `MODALITIES` in `app/config.py`, one key per pool you merge.
 * **Study size / coverage / title / layout** — `app/config.py` (`STUDIES_PER_RATER`,
   `TARGET_COVERAGE`, `APP_TITLE`, `MODALITY_LABEL`, `QUESTIONS_BESIDE_REPORTS`,
   `PANEL_HEIGHT_PX`, …).
@@ -204,14 +283,22 @@ app/
   theme.py        CSS
   manage.py       CLI: list-users, set-role, reset-password, export
 scripts/
+  assign_systems.py      one candidate system per study, balanced (any dataset)
+  generate_fallbacks.py  error injection + similar-case retrieval (any dataset)
+  build_pool.py          references + candidate files -> one modality's pool (any dataset)
+  normalize_candidate_format.py  strip Markdown from candidate reports
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
-  precompute_links.py    sentence links between reference and candidate (radmetric)
+  precompute_links.py    sentence links between reference and candidate
   add_candidate.py       add a model to an existing pool, rebalanced, rated cases untouched
   select_rexgradient_studies.py, generate_cxr_candidates.py, build_pool_rexgradient.py
                          chest X-ray arm (ReXGradient references + 4 candidate systems)
   merge_pools.py         merge per-modality pools into data/cases.json
+reporttools/             claim extraction, matching, injection, retrieval (from radmetric, MIT)
+  lexicons/              injection lexicons for new modalities (README + ultrasound draft)
+docs/
+  new_modality_guide.pdf how to run an arm for a new modality, step by step
 data/
-  cases.example.json     example pool: 5 CT-RATE cases with precomputed links (schema reference)
+  cases.example.json     synthetic example pool with precomputed links (schema reference)
 ```
 
 ## License

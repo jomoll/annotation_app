@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Precompute sentence links between reference and candidate for the hover highlighting.
 
-Uses radmetric's claim extraction + matching (https://github.com/jomoll/radmetric):
+Uses the claim extraction + matching in reporttools/ (vendored from radmetric, no install needed):
 every sentence of both reports is turned into clinical claims by an LLM, claims are
 paired one-to-one across the reports (Hungarian assignment on observation identity),
 and each matched claim pair becomes a link between the two sentences it came from.
@@ -14,9 +14,9 @@ Writes, per case:
                "score": 0.95, "claims": 2}, ...]        # char offsets within the section text
 and, in the pool meta, "links_meta" with the model and settings used.
 
-Requires a running OpenAI-compatible endpoint (see radmetric's scripts/serve.sh):
-    export RADMETRIC_LLM_URL=http://localhost:8000/v1   RADMETRIC_LLM_MODEL=gemma-4-31b
-    PYTHONPATH=/path/to/radmetric/src python scripts/precompute_links.py data/cases.json
+Requires an OpenAI-compatible endpoint (report text is sent to it -- use one you may send it to):
+    export ANNOTATION_LLM_URL=http://localhost:8000/v1   ANNOTATION_LLM_MODEL=<served model name>
+    python scripts/precompute_links.py data/cases.json
 
 --no-think adds vLLM's chat_template_kwargs {"enable_thinking": false}, needed for
 reasoning models (Qwen 3.x) that would otherwise spend the token budget thinking.
@@ -32,48 +32,14 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import requests
-    from radmetric import llm
-    from radmetric.claims import split_sentences
-    from radmetric.extract import LLMReportParser
-    from radmetric.matching import Matcher
-except ImportError as e:  # pragma: no cover
-    sys.exit(f"radmetric not importable ({e}) — set PYTHONPATH to radmetric/src and pip install requests scipy numpy")
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from reporttools import llm  # noqa: E402
+from reporttools.claims import split_sentences  # noqa: E402
+from reporttools.extract import LLMReportParser  # noqa: E402
+from reporttools.matching import Matcher  # noqa: E402
 
 REF_SECTIONS = ["findings", "impression"]
-
-
-def patch_no_think() -> None:
-    """Route radmetric's chat through a request that disables the model's thinking phase."""
-    _orig_key = llm._key
-
-    def chat(prompt, *, system="", max_tokens=256, model=llm.MODEL, use_cache=True, timeout=180):
-        k = _orig_key(prompt, system, model + "#nothink", max_tokens)
-        if use_cache:
-            hit = llm._cache.get(k)
-            if hit is not None:
-                return hit
-        msgs = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": prompt}]
-        payload = {"model": model, "messages": msgs, "max_tokens": max_tokens, "temperature": 0,
-                   "chat_template_kwargs": {"enable_thinking": False}}
-        last = None
-        for attempt in range(3):
-            try:
-                r = requests.post(f"{llm.BASE_URL}/chat/completions",
-                                  headers={"Authorization": f"Bearer {llm.API_KEY}", "Content-Type": "application/json"},
-                                  json=payload, timeout=timeout)
-                r.raise_for_status()
-                out = (r.json()["choices"][0]["message"]["content"] or "").strip()
-                if use_cache:
-                    llm._cache.put(k, prompt, out, model)
-                return out
-            except Exception as e:  # noqa: BLE001
-                last = e
-                time.sleep(1.5 * (attempt + 1))
-        raise RuntimeError(f"LLM call failed after retries: {last}")
-
-    llm.chat = chat
 
 
 def sentence_spans(text: str) -> list[tuple[str, int, int]]:
@@ -112,8 +78,19 @@ def links_for(case: dict, parser: LLMReportParser, matcher: Matcher, min_score: 
     ref = case["reference"]
     cand = case["candidate"]
     ref_texts = [(s, ref.get(s) or "") for s in REF_SECTIONS if (ref.get(s) or "").strip()]
-    cand_texts = [("text", cand.get("text") or "")] if (cand.get("text") or "").strip() else \
-                 [(s, cand.get(s) or "") for s in REF_SECTIONS if (cand.get(s) or "").strip()]
+    if not ref_texts and (ref.get("text") or "").strip():
+        ref_texts = [("text", ref.get("text") or "")]     # unsectioned reference, as the app renders it
+    # Mirror app._render_candidate exactly: it renders findings/impression as separate blocks when
+    # the candidate has them and falls back to one "text" block otherwise, and it looks up spans by
+    # that section name. Preferring "text" here (as this did) produced spans keyed "text" for every
+    # structured candidate, so the renderer found nothing under "findings"/"impression" and the
+    # candidate side of the highlighting silently did nothing -- all 200 brain-MRI cases and the 40
+    # CXRMate-2 chest X-ray cases, while the reference side kept working and hid the breakage.
+    # Sections also describe what the rater actually sees: in that branch anything in `text` but not
+    # in findings/impression is never displayed.
+    cand_texts = [(s, cand.get(s) or "") for s in REF_SECTIONS if (cand.get(s) or "").strip()]
+    if not cand_texts and (cand.get("text") or "").strip():
+        cand_texts = [("text", cand.get("text") or "")]
     parsed = parser.parse_many([t for _, t in ref_texts] + [t for _, t in cand_texts])
     ref_parsed, cand_parsed = parsed[: len(ref_texts)], parsed[len(ref_texts):]
 
@@ -163,7 +140,7 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     if args.no_think:
-        patch_no_think()
+        llm.NO_THINK = True
     h = llm.health()
     print(f"endpoint {h['url']} model {h['model']} ok={h['ok']} ({h['latency']:.2f}s): {h['response'][:60]!r}")
 
@@ -188,7 +165,7 @@ def main(argv=None) -> int:
     if isinstance(data, dict):
         data.setdefault("meta", {})["links_meta"] = {
             "computed_at": datetime.now(timezone.utc).isoformat(),
-            "method": "radmetric claim extraction + Hungarian matching, aggregated to sentence pairs",
+            "method": "claim extraction + Hungarian matching (reporttools, from radmetric), aggregated to sentence pairs",
             "llm_model": h["model"], "llm_url": h["url"], "no_think": args.no_think,
             "match_threshold": matcher.threshold, "min_score": args.min_score,
         }

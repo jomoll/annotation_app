@@ -11,6 +11,10 @@ data/annotations/*
 !data/annotations/.gitkeep
 data/*.tmp
 data/*.json.tmp
+data/*_bak
+data/assignments.*.json
+# LLM cache of reporttools/llm.py: stores every prompt, i.e. report text
+data/.llm_cache.sqlite*
 
 # ---- python ----
 __pycache__/
@@ -23,3 +27,6 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+# research analyses live outside this repo (annotation + preprocessing only)
+analysis/

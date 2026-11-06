@@ -1,0 +1,8 @@
+# Only for the pool-building tools -- scripts/generate_fallbacks.py, scripts/precompute_links.py,
+# scripts/build_pool.py, scripts/assign_systems.py. The app itself needs requirements.txt only.
+# Everything they use is in reporttools/; no radmetric install is needed.
+pandas>=2.0
+requests>=2.31        # OpenAI-compatible LLM endpoint (claim extraction)
+numpy>=1.24
+scipy>=1.11           # Hungarian matching for sentence links
+scikit-learn>=1.3     # TF-IDF for similar-case retrieval
