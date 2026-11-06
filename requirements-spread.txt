@@ -1,0 +1,8 @@
+# For scripts/check_spread.py (on top of requirements-tools.txt). Needs one GPU:
+# ~16 GB for the default GREEN-RadLlama2-7b judge, ~10 GB with Qwen/Qwen3-4B-Instruct-2507.
+torch
+transformers>=4.51
+accelerate
+sentencepiece
+protobuf
+bert-score

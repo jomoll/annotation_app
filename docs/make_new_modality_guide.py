@@ -219,6 +219,12 @@ def build():
         "python3 scripts/generate_fallbacks.py retrieve --reports refs.csv --studies eval.txt \\",
         "        --donor-reports train.csv --out data/raw/<m>/candidates/retrieved.jsonl",
     ]))
+    F.append(P("Retrieval and most injection categories run offline. Omission (and the claim-based "
+               "variant of negation) needs claims from an OpenAI-compatible LLM endpoint "
+               "(ANNOTATION_LLM_URL / _MODEL / _KEY); <font face='Courier' size='8.5'>--no-llm</font> "
+               "skips them. With a reasoning model as extractor, answers can come back empty once "
+               "the thinking spends the budget: raise ANNOTATION_LLM_MAX_TOKENS (e.g. 4096); the "
+               "script warns when it sees empty answers.", "body"))
     F.append(P("On brain MRI a general-purpose model beat every specialised one we tried, so the "
                "ordering above is about staying close to the other arms, not about which model is "
                "best. Three brain-MRI models bear this out: the best reached 0.31 median F1 "
@@ -244,38 +250,42 @@ def build():
     F.append(P("Score every candidate against its reference with an automatic metric and look at "
                "the <b>distribution</b>, not the mean. This is the step that saves a wasted study.",
                "body"))
-    F.append(P("Any claim-level metric will do for this check \u2014 for example RadMatch "
-               "(github.com/raidium-med/RadMatch) or radmetric (github.com/jomoll/radmetric). "
-               "Score one row per candidate and keep the per-report output.", "body"))
+    F.append(P("<font face='Courier' size='8.5'>scripts/check_spread.py</font> does this on one "
+               "local GPU, with no server or endpoint: it scores every model candidate with GREEN "
+               "(the error-counting prompt, answered by a local judge) and BERTScore, and prints the "
+               "distribution per system next to our arms.", "body"))
+    F.append(code([
+        "pip install -r requirements-spread.txt",
+        "python scripts/check_spread.py --references refs.csv --studies eval_ids.txt \\",
+        "    --candidates modelA=a.jsonl modelB=b.jsonl --assignment assignment.csv \\",
+        "    --out spread.csv          # --green-model Qwen/Qwen3-4B-Instruct-2507: general judge",
+    ]))
     F.append(table([
-        ["Arm", "Median F1", "Reports with no correct claim", "Clearing 0.3"],
-        ["Chest CT", "0.46", "0%", "92%"],
-        ["Chest X-ray", "0.33", "8%", "65%"],
-        ["Brain MRI", "0.23", "20%", "40%"],
-    ], [45 * mm, 32 * mm, 54 * mm, 34 * mm]))
-    F.append(P("CT and X-ray span a usable range with specialised models alone and need no "
-               "fallback. Brain MRI does not reach the top of the scale, which is the only reason "
-               "that arm supplements its models.", "cap"))
-    F.append(P("<b>The decision rule.</b> If the pool has no empty bin and a few per cent of "
-               "candidates clear the top of the scale, stop: four or five specialised models is "
-               "the arm, exactly as in CT and X-ray. Add a fallback strategy only to fill a bin "
-               "the models leave empty, and add the smallest number that fills it. A pool whose "
-               "median sits near the floor, or where a large share of candidates contain no "
-               "correct claim at all, cannot be fixed by adding more of the same kind of model.",
-               "body"))
+        ["Arm, model candidates only", "GREEN median", "Top band (0.8-1)", "Bottom band (0-0.2)"],
+        ["Chest CT", "0.38", "9%", "14%"],
+        ["Chest X-ray", "0.40", "12%", "10%"],
+        ["Brain MRI", "0.07", "0%", "67%"],
+    ], [52 * mm, 30 * mm, 38 * mm, 42 * mm]))
+    F.append(P("GREEN with the published judge GREEN-RadLlama2-7b. CT and X-ray span the range with "
+               "specialised models alone and need no fallback. Brain MRI does not reach the top of "
+               "the scale, which is the only reason that arm supplements its models. A general "
+               "judge (Qwen3-4B-Instruct) gives the same picture: 11%, 11% and 2% in the top band.",
+               "cap"))
+    F.append(P("<b>The decision rule.</b> If no band is empty and a few per cent of candidates reach "
+               "the top band, stop: four or five specialised models is the arm, exactly as in CT and "
+               "X-ray. Add a fallback strategy only to fill a band the models leave empty, and add "
+               "the smallest number that fills it. A pool whose median sits near the floor, or "
+               "where most candidates match no reference finding at all, cannot be fixed by adding "
+               "more of the same kind of model.", "body"))
+    F.append(warn("Both GREEN judges were built on chest reports",
+                  "Against our readers the published judge reached Spearman +0.21 on chest CT, +0.50 "
+                  "on X-ray and +0.73 on brain MRI; the general 4B judge +0.02, +0.55 and +0.76; "
+                  "BERTScore +0.36, +0.44 and +0.78. Good enough to see whether a band is empty, not "
+                  "to rank individual reports. On a new modality run both judges: if they disagree "
+                  "about the shape of the distribution, read a sample of reports before deciding."))
     F.append(warn("Pick a judge that is not also a candidate",
-                  "Every model we had served locally was also in the candidate set, so it would "
-                  "have graded its own reports. We used a text-only model instead: the judge reads "
-                  "reference and candidate text, never images, so a text-only model qualifies and "
-                  "cannot be one of the candidates."))
-    F.append(warn("Disable thinking mode on a reasoning judge",
-                  "A reasoning model returns its trace in the message body. Our claim extractor "
-                  "then read 4 claims out of reports holding 29, and the parser silently scored "
-                  "near zero. Send chat_template_kwargs {enable_thinking: false}, or use a model "
-                  "that returns reasoning in a separate field, and always print the parse rate. "
-                  "Not every server honours the switch: behind a LiteLLM gateway glm-5.3-flash "
-                  "kept thinking and returned empty answers once its budget ran out, so raise the "
-                  "answer budget instead (ANNOTATION_LLM_MAX_TOKENS for the bundled tools)."))
+                  "If one of your candidate systems is a general language model, do not pass the "
+                  "same model as --green-model: it would grade its own reports."))
 
     # ---------------------------------------------------------------- step 5
     F.append(P("5. Stand up the app", "h1"))

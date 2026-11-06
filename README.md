@@ -178,7 +178,8 @@ Which model produced the links is recorded in the pool's `links_meta`.
 The full protocol — choosing the dataset and split, capping the normal share,
 checking the quality spread before booking clinicians, reader allocation — is in
 [`docs/new_modality_guide.pdf`](docs/new_modality_guide.pdf). The tools it uses
-are dataset-independent and need nothing beyond `requirements-tools.txt`:
+are dataset-independent and need nothing beyond `requirements-tools.txt`
+(the spread check in step 3 also needs `requirements-spread.txt` and one GPU):
 
 ```bash
 pip install -r requirements-tools.txt
@@ -191,7 +192,13 @@ python scripts/assign_systems.py --references refs.csv --studies eval_ids.txt \
 #    {"study_id": ..., "text": ...}  or  {"study_id": ..., "findings": ..., "impression": ...}
 #    (scripts/normalize_candidate_format.py strips Markdown, so no system is identifiable by layout)
 
-# 3. optional text-derived strata, ONLY to fill a quality band the models leave empty
+# 3. do you need fallbacks? score the model candidates on one local GPU (no server, no endpoint)
+pip install -r requirements-spread.txt
+python scripts/check_spread.py --references refs.csv --studies eval_ids.txt \
+    --candidates modelA=a.jsonl modelB=b.jsonl --assignment data/raw/us/assignment.csv \
+    --out data/raw/us/spread.csv                       # add --green-model Qwen/Qwen3-4B-Instruct-2507 for the general judge
+
+# 4. optional text-derived strata, ONLY to fill a quality band the models leave empty
 python scripts/generate_fallbacks.py coverage --modality us --acquisition abdomen_us \
     --lexicon my_us_lexicon.json
 python scripts/generate_fallbacks.py inject --reports refs.csv --studies eval_ids.txt \
@@ -201,7 +208,7 @@ python scripts/generate_fallbacks.py retrieve --reports refs.csv --studies eval_
     --donor-reports train_refs.csv --match-col exam_type \
     --out data/raw/us/candidates/retrieved.jsonl
 
-# 4. pool -> merge -> register the modality in app/config.py MODALITIES
+# 5. pool -> merge -> register the modality in app/config.py MODALITIES
 python scripts/build_pool.py --modality us --references refs.csv \
     --candidates modelA=a.jsonl modelB=b.jsonl injected=data/raw/us/candidates/injected.jsonl \
                  retrieved=data/raw/us/candidates/retrieved.jsonl \
@@ -215,6 +222,27 @@ python scripts/precompute_links.py data/cases.json     # optional hover links
 the app then shows them as one block), and optionally `indication` /
 `clinical_information`, `technique` / `specimen` and `normal` (0/1). See
 `reporttools/reports.py`.
+
+**Spread check** (`check_spread.py`) scores every model candidate against its
+reference with two metrics, both run in-process with `transformers`: GREEN's
+error-counting prompt answered by a local judge, and BERTScore. It prints the
+distribution per system with our three arms alongside. Two GREEN judges are
+offered: the published `StanfordAIMI/GREEN-RadLlama2-7b` (default, ~16 GB GPU)
+and any instruction-tuned model via `--green-model`, e.g.
+`Qwen/Qwen3-4B-Instruct-2507` (~10 GB). Validated against our reader ratings
+(Spearman, 200 candidates per arm):
+
+| | GREEN-RadLlama2-7b | GREEN with Qwen3-4B | BERTScore |
+|---|---|---|---|
+| chest CT | +0.21 | +0.02 | +0.36 |
+| chest X-ray | +0.50 | +0.55 | +0.44 |
+| brain MRI (35 rated) | +0.73 | +0.76 | +0.78 |
+
+Both judges reach the decision we reached by hand: CT and X-ray models cover the
+range (9-12% of candidates in the top GREEN band), brain-MRI models do not (0-2%
+at the top, ~70% at the bottom). Neither is a reader substitute, and both judges
+were built for chest reports, so on a new modality run both and see whether they
+agree; read a dozen reports yourself before deciding.
 
 **Error injection** writes the reference with 1-3 labelled errors — laterality,
 severity, size, morphology, location, negation, omission, plus out-of-field,
@@ -285,6 +313,7 @@ app/
 scripts/
   assign_systems.py      one candidate system per study, balanced (any dataset)
   generate_fallbacks.py  error injection + similar-case retrieval (any dataset)
+  check_spread.py        quality spread of the model candidates: do you need fallbacks? (local GPU)
   build_pool.py          references + candidate files -> one modality's pool (any dataset)
   normalize_candidate_format.py  strip Markdown from candidate reports
   build_pool_ctrate.py   CT-RATE + Dia-LLaMA/Reg2RG/M3D/RadFM pool builder
@@ -293,7 +322,8 @@ scripts/
   select_rexgradient_studies.py, generate_cxr_candidates.py, build_pool_rexgradient.py
                          chest X-ray arm (ReXGradient references + 4 candidate systems)
   merge_pools.py         merge per-modality pools into data/cases.json
-reporttools/             claim extraction, matching, injection, retrieval (from radmetric, MIT)
+reporttools/             claim extraction, matching, injection, retrieval (from radmetric, MIT),
+                         GREEN prompt + parser (from Stanford-AIMI/GREEN, MIT)
   lexicons/              injection lexicons for new modalities (README + ultrasound draft)
 docs/
   new_modality_guide.pdf how to run an arm for a new modality, step by step

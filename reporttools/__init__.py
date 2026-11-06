@@ -30,4 +30,7 @@ needs no radmetric install. Local changes:
 * claims.py, matching.py -- unchanged apart from a provenance line.
 
 retrieval.py and layout.py come from this repository's brain-MRI arm, generalised.
+
+green.py holds the GREEN prompt and response parser from Stanford-AIMI/GREEN (MIT per its setup.py),
+used by scripts/check_spread.py; its scores match the original parser on 422 judge answers.
 """
